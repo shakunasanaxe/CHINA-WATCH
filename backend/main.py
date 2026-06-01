@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 
-def _run_crawl_sync(api_key: str):
+def _run_crawl_sync(api_key: str, provider: str = "groq"):
     global crawl_status
     crawl_status.update({"running": True, "progress": 0, "last_error": None, "phase": "searching"})
     log_id = log_crawl_start()
@@ -63,7 +63,7 @@ def _run_crawl_sync(api_key: str):
 
         crawl_status["phase"] = "analyzing"
         crawl_status["current_site"] = "Analyzing with AI..."
-        total_saved = enrich_articles(articles, api_key=api_key, db_insert_fn=insert_article)
+        total_saved = enrich_articles(articles, api_key=api_key, provider=provider, db_insert_fn=insert_article)
         log_crawl_finish(log_id, total_saved)
         logger.info(f"Done. {total_saved} articles saved.")
     except Exception as e:
@@ -96,15 +96,22 @@ def stats():
 
 
 @app.post("/api/crawl/trigger")
-async def trigger_crawl(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
+async def trigger_crawl(
+    x_api_key: Optional[str] = Header(None, alias="X-Api-Key"),
+    x_provider: Optional[str] = Header(None, alias="X-Provider"),
+):
     if crawl_status["running"]:
         return {"status": "already_running", "message": "Crawl already in progress"}
-    api_key = x_api_key or os.environ.get("GROQ_API_KEY", "")
-    if not api_key:
-        raise HTTPException(status_code=400, detail="No API key provided")
+    provider = (x_provider or "groq").lower()
+    if provider == "ollama":
+        api_key = "ollama"  # no real key needed
+    else:
+        api_key = x_api_key or os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            raise HTTPException(status_code=400, detail="No API key provided")
     loop = asyncio.get_event_loop()
-    loop.run_in_executor(executor, _run_crawl_sync, api_key)
-    return {"status": "started", "message": "Crawl initiated"}
+    loop.run_in_executor(executor, _run_crawl_sync, api_key, provider)
+    return {"status": "started", "message": f"Crawl initiated with provider: {provider}"}
 
 
 @app.get("/api/crawl/status")

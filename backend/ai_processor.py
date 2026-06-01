@@ -9,11 +9,16 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 from typing import Optional
-from groq import Groq
 
 logger = logging.getLogger(__name__)
 
-MODEL = "llama-3.1-8b-instant"
+# Default models per provider
+PROVIDER_MODELS = {
+    "groq":        "llama-3.1-8b-instant",
+    "openrouter":  "meta-llama/llama-3.1-8b-instruct:free",
+    "anthropic":   "claude-haiku-4-5",
+    "ollama":      "llama3.2",  # user can override via OLLAMA_MODEL env var
+}
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -31,9 +36,61 @@ Required keys:
 - "significance": 2-3 sentence analysis of policy significance (string)"""
 
 
-def get_groq_client(api_key: str = None):
-    key = api_key or os.environ.get("GROQ_API_KEY", "")
-    return Groq(api_key=key)
+def _call_ai(prompt: str, system: str, provider: str, api_key: str) -> str:
+    """Call the appropriate AI provider and return the raw text response."""
+
+    if provider == "groq":
+        from groq import Groq
+        client = Groq(api_key=api_key or os.environ.get("GROQ_API_KEY", ""))
+        resp = client.chat.completions.create(
+            model=PROVIDER_MODELS["groq"],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=800,
+        )
+        return resp.choices[0].message.content
+
+    elif provider == "openrouter":
+        from openai import OpenAI
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key or os.environ.get("OPENROUTER_API_KEY", ""),
+        )
+        resp = client.chat.completions.create(
+            model=PROVIDER_MODELS["openrouter"],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=800,
+        )
+        return resp.choices[0].message.content
+
+    elif provider == "anthropic":
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY", ""))
+        resp = client.messages.create(
+            model=PROVIDER_MODELS["anthropic"],
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=800,
+        )
+        return resp.content[0].text
+
+    elif provider == "ollama":
+        from openai import OpenAI
+        ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+        model = os.environ.get("OLLAMA_MODEL", PROVIDER_MODELS["ollama"])
+        client = OpenAI(base_url=f"{ollama_url}/v1", api_key="ollama")
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=800,
+        )
+        return resp.choices[0].message.content
+
+    else:
+        raise ValueError(f"Unknown provider: {provider}")
 
 
 # ── RSS fetching ──────────────────────────────────────────────────────────────
@@ -218,24 +275,20 @@ def fetch_articles(category: str, target: dict) -> list:
 
 # ── AI analysis ───────────────────────────────────────────────────────────────
 
-def ai_analyze_article(title: str, text: str, source_site: str, api_key: str = None) -> Optional[dict]:
+def ai_analyze_article(title: str, text: str, source_site: str, api_key: str = None, provider: str = "groq") -> Optional[dict]:
     if not title and not text:
         return None
 
-    client = get_groq_client(api_key)
     content = f"SOURCE: {source_site}\nTITLE: {title}\n\nCONTENT:\n{text[:2000]}"
 
     try:
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[
-                {"role": "system", "content": ANALYSIS_SYSTEM},
-                {"role": "user", "content": f"Analyze this article:\n\n{content}"},
-            ],
-            temperature=0.1,
-            max_tokens=800,
+        raw = _call_ai(
+            prompt=f"Analyze this article:\n\n{content}",
+            system=ANALYSIS_SYSTEM,
+            provider=provider,
+            api_key=api_key or "",
         )
-        raw = response.choices[0].message.content.strip()
+        raw = raw.strip()
         raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
         start = raw.find("{")
         end = raw.rfind("}") + 1
@@ -243,7 +296,7 @@ def ai_analyze_article(title: str, text: str, source_site: str, api_key: str = N
             raw = raw[start:end]
         return json.loads(raw)
     except Exception as e:
-        logger.error(f"AI analysis error for {source_site}: {e}")
+        logger.error(f"AI analysis error for {source_site} ({provider}): {e}")
         return None
 
 
@@ -272,7 +325,7 @@ def run_ai_search_crawl(api_key: str = None, progress_callback=None) -> list:
     return all_articles
 
 
-def enrich_articles(articles: list, api_key: str = None, db_insert_fn=None) -> int:
+def enrich_articles(articles: list, api_key: str = None, provider: str = "groq", db_insert_fn=None) -> int:
     saved = 0
     for art in articles:
         try:
@@ -280,12 +333,14 @@ def enrich_articles(articles: list, api_key: str = None, db_insert_fn=None) -> i
             has_text = art.get("raw_text") and len(art.get("raw_text", "")) > 30
 
             if has_title and has_text:
-                time.sleep(2)  # stay within Groq free tier rate limit (30 req/min)
+                if provider == "groq":
+                    time.sleep(2)  # stay within Groq free tier rate limit (30 req/min)
                 result = ai_analyze_article(
                     art.get("english_title", art.get("original_title", "")),
                     art.get("raw_text", ""),
                     art.get("source_site", ""),
                     api_key,
+                    provider,
                 )
                 if result:
                     art["english_title"] = result.get("english_title", art.get("english_title"))

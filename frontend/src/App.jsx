@@ -33,14 +33,72 @@ const SITE_NAMES = {
   MFA: "MFA", XINHUA: "Xinhua", GLOBALTIMES: "Global Times", CGTN: "CGTN",
 };
 
+const PROVIDERS = [
+  {
+    id: "groq",
+    label: "Groq",
+    badge: "Free",
+    badgeColor: "bg-green-100 text-green-700",
+    description: "Fast & free. 14,400 requests/day.",
+    placeholder: "gsk_...",
+    keyLink: "https://console.groq.com/keys",
+    needsKey: true,
+  },
+  {
+    id: "ollama",
+    label: "Ollama",
+    badge: "Local · No key",
+    badgeColor: "bg-blue-100 text-blue-700",
+    description: "Runs on your machine. No API key needed.",
+    placeholder: null,
+    keyLink: "https://ollama.com/download",
+    needsKey: false,
+  },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    badge: "Free tier",
+    badgeColor: "bg-purple-100 text-purple-700",
+    description: "Access many free models via one key.",
+    placeholder: "sk-or-...",
+    keyLink: "https://openrouter.ai/keys",
+    needsKey: true,
+  },
+  {
+    id: "anthropic",
+    label: "Anthropic",
+    badge: "Paid · Best quality",
+    badgeColor: "bg-orange-100 text-orange-700",
+    description: "Claude models. Best Chinese translation quality.",
+    placeholder: "sk-ant-...",
+    keyLink: "https://console.anthropic.com/keys",
+    needsKey: true,
+  },
+];
+
+function useProviderConfig() {
+  const [config, setConfig] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("cw_provider_config") || "{}"); } catch { return {}; }
+  });
+  const save = (c) => { setConfig(c); localStorage.setItem("cw_provider_config", JSON.stringify(c)); };
+  return [config, save];
+}
+
+// Keep backward compat for old groq-only key
 function useApiKey() {
-  const [key, setKey] = useState(() => localStorage.getItem("cw_groq_api_key") || "");
-  const save = (k) => { setKey(k); localStorage.setItem("cw_groq_api_key", k); };
-  return [key, save];
+  const [config, saveConfig] = useProviderConfig();
+  const key = config.key || localStorage.getItem("cw_groq_api_key") || "";
+  const provider = config.provider || (key ? "groq" : "");
+  const save = (k, prov) => saveConfig({ key: k, provider: prov || "groq" });
+  return [key, provider, save];
 }
 
 function ApiKeyModal({ onSave }) {
+  const [selectedProvider, setSelectedProvider] = useState("groq");
   const [val, setVal] = useState("");
+  const provider = PROVIDERS.find(p => p.id === selectedProvider);
+  const canProceed = !provider.needsKey || val.length > 10;
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
@@ -53,26 +111,53 @@ function ApiKeyModal({ onSave }) {
             <p className="text-slate-500 text-xs">Research Intelligence Platform</p>
           </div>
         </div>
-        <p className="text-slate-600 text-sm mb-5 leading-relaxed">
-          Enter your free Groq API key to enable AI-powered analysis of Chinese official sources. Groq is free with 14,400 requests/day.{" "}
-          <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Get a free key →</a>
-        </p>
-        <input
-          type="password"
-          placeholder="gsk_..."
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && val.length > 10 && onSave(val)}
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-900 mb-4"
-        />
+
+        <p className="text-slate-600 text-sm mb-4">Choose your AI provider for analysis:</p>
+
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          {PROVIDERS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => { setSelectedProvider(p.id); setVal(""); }}
+              className={`text-left p-3 rounded-xl border-2 transition-all ${selectedProvider === p.id ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"}`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold text-slate-900 text-sm">{p.label}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${p.badgeColor}`}>{p.badge}</span>
+              </div>
+              <p className="text-slate-500 text-xs leading-tight">{p.description}</p>
+            </button>
+          ))}
+        </div>
+
+        {provider.needsKey ? (
+          <>
+            <p className="text-slate-500 text-xs mb-2">
+              <a href={provider.keyLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Get a free {provider.label} key →</a>
+            </p>
+            <input
+              type="password"
+              placeholder={provider.placeholder}
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && canProceed && onSave(val, selectedProvider)}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-900 mb-4"
+            />
+          </>
+        ) : (
+          <div className="bg-blue-50 rounded-xl p-3 mb-4 text-sm text-blue-700">
+            Make sure <a href={provider.keyLink} target="_blank" rel="noopener noreferrer" className="underline font-medium">Ollama</a> is running locally with a model pulled (e.g. <code className="bg-blue-100 px-1 rounded">ollama pull llama3.2</code>).
+          </div>
+        )}
+
         <button
-          onClick={() => onSave(val)}
-          disabled={val.length < 10}
+          onClick={() => onSave(val, selectedProvider)}
+          disabled={!canProceed}
           className="w-full bg-slate-900 text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 hover:bg-slate-800 transition-colors"
         >
           Enter Platform
         </button>
-        <p className="text-slate-400 text-xs mt-4 text-center">Key stored locally in your browser only</p>
+        <p className="text-slate-400 text-xs mt-4 text-center">Settings stored locally in your browser only</p>
       </div>
     </div>
   );
@@ -231,7 +316,7 @@ function CrawlProgressBanner({ status, onDismiss }) {
 }
 
 export default function App() {
-  const [apiKey, setApiKey] = useApiKey();
+  const [apiKey, provider, setApiKey] = useApiKey();
   const [activeTab, setActiveTab] = useState("all");
   const [articles, setArticles] = useState([]);
   const [stats, setStats] = useState(null);
@@ -277,7 +362,7 @@ export default function App() {
   const triggerCrawl = async () => {
     try {
       await axios.post(`${API_BASE}/crawl/trigger`, {}, {
-        headers: { "X-Api-Key": apiKey }
+        headers: { "X-Api-Key": apiKey, "X-Provider": provider || "groq" }
       });
       setCrawlStatus({ running: true, phase: "searching", progress: 0, total: 15, current_site: "" });
       pollRef.current = setInterval(pollCrawlStatus, 3000);
@@ -305,7 +390,7 @@ export default function App() {
     );
   });
 
-  if (!apiKey) return <ApiKeyModal onSave={setApiKey} />;
+  if (!apiKey && provider !== "ollama") return <ApiKeyModal onSave={(key, prov) => setApiKey(key, prov)} />;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ fontFamily: "Century Gothic, Century, CenturyGothic, AppleGothic, sans-serif" }}>
