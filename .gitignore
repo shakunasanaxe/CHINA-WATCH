@@ -1,0 +1,7 @@
+backend/venv/
+backend/china_watch.db
+backend/__pycache__/
+frontend/node_modules/
+frontend/dist/
+*.pyc
+.env
