@@ -325,45 +325,23 @@ def run_ai_search_crawl(api_key: str = None, progress_callback=None) -> list:
     return all_articles
 
 
-def enrich_articles(articles: list, api_key: str = None, provider: str = "groq", db_insert_fn=None) -> int:
+def save_articles(articles: list, db_insert_fn=None) -> int:
+    """Save raw scraped articles to DB without AI processing. Fast."""
     saved = 0
     for art in articles:
         try:
-            has_title = art.get("english_title") and len(art["english_title"]) > 5
-            has_text = art.get("raw_text") and len(art.get("raw_text", "")) > 30
-
-            if has_title and has_text:
-                if provider == "groq":
-                    time.sleep(2)  # stay within Groq free tier rate limit (30 req/min)
-                result = ai_analyze_article(
-                    art.get("english_title", art.get("original_title", "")),
-                    art.get("raw_text", ""),
-                    art.get("source_site", ""),
-                    api_key,
-                    provider,
-                )
-                if result:
-                    art["english_title"] = result.get("english_title", art.get("english_title"))
-                    bullets = result.get("summary_bullets", [])
-                    art["summary"] = "\n".join(f"• {b}" for b in bullets)
-                    art["significance"] = result.get("significance", "")
-                    art["processed"] = 1
-                else:
-                    art["summary"] = art.get("raw_text", "")[:500]
-                    art["processed"] = 0
-            else:
-                art["summary"] = art.get("raw_text", "")[:500]
-
+            art["processed"] = 0
+            art.setdefault("summary", "")
+            art.setdefault("significance", "")
             if db_insert_fn:
                 db_insert_fn(art)
             saved += 1
         except Exception as e:
-            logger.error(f"Enrich error: {e}")
-            if db_insert_fn:
-                try:
-                    db_insert_fn(art)
-                except Exception:
-                    pass
-
+            logger.error(f"Save error: {e}")
     logger.info(f"Saved {saved}/{len(articles)} articles to DB")
     return saved
+
+
+def enrich_articles(articles: list, api_key: str = None, provider: str = "groq", db_insert_fn=None) -> int:
+    """Legacy: save articles without AI (AI is now on-demand)."""
+    return save_articles(articles, db_insert_fn)

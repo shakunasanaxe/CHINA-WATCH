@@ -4,37 +4,101 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, BackgroundTasks, HTTPException, Query, Header
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from datetime import datetime, timedelta
 from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query, Header, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from apscheduler.schedulers.background import BackgroundScheduler
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from database import init_db, get_articles, get_stats, insert_article, log_crawl_start, log_crawl_finish
-from ai_processor import run_ai_search_crawl, enrich_articles
-from config import DOMAIN_LABELS, DOMAIN_COLORS
+from database import (
+    init_db, get_articles, get_total_count, get_stats, get_article_by_id,
+    insert_article, update_article_summary, log_crawl_start, log_crawl_finish
+)
+from ai_processor import run_ai_search_crawl, save_articles, ai_analyze_article
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# ── Auth config ───────────────────────────────────────────────────────────────
+SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production-please")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_HOURS = 24 * 7  # 1 week
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "chinawatch2024")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    to_encode["exp"] = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_token(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+# ── Crawl state ───────────────────────────────────────────────────────────────
 executor = ThreadPoolExecutor(max_workers=2)
 crawl_status = {
-    "running": False,
-    "progress": 0,
-    "total": 0,
-    "current_site": "",
-    "last_error": None,
-    "phase": "",
+    "running": False, "progress": 0, "total": 0,
+    "current_site": "", "last_error": None, "phase": "",
+    "last_auto_crawl": None,
 }
 
+def _run_crawl_sync():
+    global crawl_status
+    crawl_status.update({"running": True, "progress": 0, "last_error": None, "phase": "searching"})
+    log_id = log_crawl_start()
+    total_saved = 0
+    try:
+        def progress_cb(done, total, site):
+            crawl_status.update({"progress": done, "total": total, "current_site": site})
+
+        logger.info("Crawling: scraping all sources...")
+        articles = run_ai_search_crawl(progress_callback=progress_cb)
+        logger.info(f"Found {len(articles)} articles. Saving to DB...")
+        crawl_status["phase"] = "saving"
+        crawl_status["current_site"] = "Saving articles..."
+        total_saved = save_articles(articles, db_insert_fn=insert_article)
+        log_crawl_finish(log_id, total_saved)
+        crawl_status["last_auto_crawl"] = datetime.utcnow().isoformat()
+        logger.info(f"Done. {total_saved} articles saved.")
+    except Exception as e:
+        crawl_status["last_error"] = str(e)
+        log_crawl_finish(log_id, total_saved, error=str(e))
+        logger.error(f"Crawl failed: {e}")
+    finally:
+        crawl_status.update({"running": False, "current_site": "", "phase": "idle"})
+
+# ── App startup ───────────────────────────────────────────────────────────────
+scheduler = BackgroundScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    logger.info("China Watch API started. DB initialized.")
+    logger.info("China Watch API started.")
+    # Auto-crawl every 6 hours
+    scheduler.add_job(_run_crawl_sync, "interval", hours=6, id="auto_crawl",
+                      next_run_time=datetime.now())
+    scheduler.start()
+    logger.info("Scheduler started: crawling every 6 hours.")
     yield
-
+    scheduler.shutdown()
 
 app = FastAPI(title="China Watch API", lifespan=lifespan)
 
@@ -46,115 +110,113 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Auth endpoints ────────────────────────────────────────────────────────────
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
-def _run_crawl_sync(api_key: str, provider: str = "groq"):
-    global crawl_status
-    crawl_status.update({"running": True, "progress": 0, "last_error": None, "phase": "searching"})
-    log_id = log_crawl_start()
-    total_saved = 0
+@app.post("/api/auth/login", response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    if form_data.username != ADMIN_USERNAME or form_data.password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    token = create_access_token({"sub": form_data.username})
+    return {"access_token": token, "token_type": "bearer"}
 
-    try:
-        def progress_cb(done, total, site):
-            crawl_status.update({"progress": done, "total": total, "current_site": site})
+@app.get("/api/auth/me")
+async def me(username: str = Depends(verify_token)):
+    return {"username": username}
 
-        logger.info("Phase 1: AI web search crawl...")
-        articles = run_ai_search_crawl(api_key=api_key, progress_callback=progress_cb)
-        logger.info(f"Found {len(articles)} articles. Phase 2: Enriching + saving...")
-
-        crawl_status["phase"] = "analyzing"
-        crawl_status["current_site"] = "Analyzing with AI..."
-        total_saved = enrich_articles(articles, api_key=api_key, provider=provider, db_insert_fn=insert_article)
-        log_crawl_finish(log_id, total_saved)
-        logger.info(f"Done. {total_saved} articles saved.")
-    except Exception as e:
-        crawl_status["last_error"] = str(e)
-        log_crawl_finish(log_id, total_saved, error=str(e))
-        logger.error(f"Crawl failed: {e}")
-    finally:
-        crawl_status.update({"running": False, "current_site": "", "phase": "idle"})
-
-
+# ── Public ────────────────────────────────────────────────────────────────────
 @app.get("/api/health")
 def health():
     return {"status": "ok", "service": "China Watch API"}
 
-
+# ── Articles (requires auth) ──────────────────────────────────────────────────
 @app.get("/api/articles")
 def list_articles(
     category: Optional[str] = Query(None),
-    limit: int = Query(50, le=200),
+    limit: int = Query(20, le=100),
     offset: int = Query(0),
+    search: Optional[str] = Query(None),
+    _: str = Depends(verify_token),
 ):
-    articles = get_articles(category=category, limit=limit, offset=offset)
-    return {"articles": articles, "count": len(articles)}
+    articles = get_articles(category=category, limit=limit, offset=offset, search=search)
+    total = get_total_count(category=category, search=search)
+    return {"articles": articles, "count": len(articles), "total": total, "offset": offset, "limit": limit}
 
+@app.get("/api/articles/{article_id}")
+def get_article(article_id: int, _: str = Depends(verify_token)):
+    art = get_article_by_id(article_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return art
 
-@app.get("/api/stats")
-def stats():
-    s = get_stats()
-    return {**s, "domain_labels": DOMAIN_LABELS, "domain_colors": DOMAIN_COLORS}
-
-
-@app.post("/api/crawl/trigger")
-async def trigger_crawl(
+@app.post("/api/articles/{article_id}/summarize")
+async def summarize_article(
+    article_id: int,
     x_api_key: Optional[str] = Header(None, alias="X-Api-Key"),
     x_provider: Optional[str] = Header(None, alias="X-Provider"),
+    _: str = Depends(verify_token),
 ):
-    if crawl_status["running"]:
-        return {"status": "already_running", "message": "Crawl already in progress"}
+    """On-demand AI summary for a single article."""
+    art = get_article_by_id(article_id)
+    if not art:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    if art.get("processed") == 1 and art.get("summary"):
+        return {"summary": art["summary"], "significance": art["significance"],
+                "english_title": art["english_title"], "cached": True}
+
     provider = (x_provider or "groq").lower()
-    if provider == "ollama":
-        api_key = "ollama"  # no real key needed
-    else:
-        api_key = x_api_key or os.environ.get("GROQ_API_KEY", "")
-        if not api_key:
-            raise HTTPException(status_code=400, detail="No API key provided")
-    loop = asyncio.get_event_loop()
-    loop.run_in_executor(executor, _run_crawl_sync, api_key, provider)
-    return {"status": "started", "message": f"Crawl initiated with provider: {provider}"}
+    api_key = x_api_key or ""
 
+    if provider != "ollama" and not api_key:
+        raise HTTPException(status_code=400, detail="API key required for this provider")
 
-@app.get("/api/crawl/status")
-def crawl_status_endpoint():
-    return crawl_status
+    result = ai_analyze_article(
+        art.get("english_title") or art.get("original_title", ""),
+        art.get("raw_text", ""),
+        art.get("source_site", ""),
+        api_key=api_key,
+        provider=provider,
+    )
 
+    if not result:
+        raise HTTPException(status_code=500, detail="AI analysis failed")
+
+    bullets = result.get("summary_bullets", [])
+    summary = "\n".join(f"• {b}" for b in bullets)
+    significance = result.get("significance", "")
+    english_title = result.get("english_title", art.get("english_title", ""))
+
+    update_article_summary(article_id, english_title, summary, significance)
+    return {"summary": summary, "significance": significance,
+            "english_title": english_title, "cached": False}
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
+from config import DOMAIN_LABELS, DOMAIN_COLORS
+
+@app.get("/api/stats")
+def stats(_: str = Depends(verify_token)):
+    s = get_stats()
+    return {**s, "domain_labels": DOMAIN_LABELS, "domain_colors": DOMAIN_COLORS}
 
 @app.get("/api/domains")
 def domains():
     return {"domains": DOMAIN_LABELS, "colors": DOMAIN_COLORS}
 
+# ── Crawl (requires auth) ─────────────────────────────────────────────────────
+@app.post("/api/crawl/trigger")
+async def trigger_crawl(_: str = Depends(verify_token)):
+    if crawl_status["running"]:
+        return {"status": "already_running", "message": "Crawl already in progress"}
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(executor, _run_crawl_sync)
+    return {"status": "started", "message": "Crawl initiated"}
 
-@app.get("/api/debug/test-rss")
-def debug_test_rss():
-    """Test RSS fetch from Global Times and Groq analysis."""
-    from ai_processor import fetch_rss_articles, ai_analyze_article
-    articles = fetch_rss_articles("foreign_policy", {
-        "site": "GLOBALTIMES",
-        "name": "Global Times",
-        "rss": "https://www.globaltimes.cn/rss/outbrain.xml",
-        "base_url": "https://www.globaltimes.cn",
-    })
-    return {"articles_found": len(articles), "sample": articles[:2]}
-
-
-@app.get("/api/debug/test-groq")
-def debug_test_groq(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
-    """Test Groq API connection."""
-    from ai_processor import get_groq_client
-    api_key = x_api_key or os.environ.get("GROQ_API_KEY", "")
-    if not api_key:
-        return {"error": "No API key"}
-    try:
-        client = get_groq_client(api_key)
-        resp = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": "Say hello in 5 words."}],
-            max_tokens=20,
-        )
-        return {"response": resp.choices[0].message.content, "status": "ok"}
-    except Exception as e:
-        return {"error": str(e), "type": type(e).__name__}
-
+@app.get("/api/crawl/status")
+def crawl_status_endpoint(_: str = Depends(verify_token)):
+    return crawl_status
 
 if __name__ == "__main__":
     import uvicorn
