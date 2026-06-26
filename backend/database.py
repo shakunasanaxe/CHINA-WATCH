@@ -15,6 +15,19 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            institution TEXT,
+            reason TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    c.execute("""
         CREATE TABLE IF NOT EXISTS articles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             domain_category TEXT NOT NULL,
@@ -91,6 +104,44 @@ def insert_article(data: dict):
         return None
     finally:
         conn.close()
+
+def create_user(name, email, username, password_hash, institution, reason):
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute("""
+            INSERT INTO users (name, email, username, password_hash, institution, reason)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, email, username, password_hash, institution, reason))
+        conn.commit()
+        return c.lastrowid
+    except Exception as e:
+        raise e
+    finally:
+        conn.close()
+
+def get_user_by_username(username):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username=?", (username,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def get_all_users():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, name, email, username, institution, reason, status, created_at FROM users ORDER BY created_at DESC")
+    rows = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return rows
+
+def set_user_status(user_id, status):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("UPDATE users SET status=? WHERE id=?", (status, user_id))
+    conn.commit()
+    conn.close()
 
 def update_article_summary(article_id: int, english_title: str, summary: str, significance: str):
     conn = get_db()

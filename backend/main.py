@@ -19,7 +19,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from database import (
     init_db, get_articles, get_total_count, get_stats, get_article_by_id,
-    insert_article, update_article_summary, log_crawl_start, log_crawl_finish
+    insert_article, update_article_summary, log_crawl_start, log_crawl_finish,
+    create_user, get_user_by_username, get_all_users, set_user_status
 )
 from ai_processor import run_ai_search_crawl, save_articles, ai_analyze_article
 
@@ -51,6 +52,11 @@ def verify_token(token: str = Depends(oauth2_scheme)):
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+def require_admin(username: str = Depends(verify_token)):
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return username
 
 # ── Crawl state ───────────────────────────────────────────────────────────────
 executor = ThreadPoolExecutor(max_workers=2)
@@ -115,16 +121,65 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    username: str
+    password: str
+    institution: str = ""
+    reason: str = ""
+
+@app.post("/api/auth/signup")
+async def signup(data: SignupRequest):
+    if len(data.username) < 3 or len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Username must be 3+ chars, password 6+ chars")
+    if get_user_by_username(data.username):
+        raise HTTPException(status_code=400, detail="Username already taken")
+    hashed = pwd_context.hash(data.password)
+    try:
+        create_user(data.name, data.email, data.username, hashed, data.institution, data.reason)
+    except Exception as e:
+        if "UNIQUE" in str(e):
+            raise HTTPException(status_code=400, detail="Email or username already registered")
+        raise HTTPException(status_code=500, detail="Registration failed")
+    return {"status": "pending", "message": "Request submitted. You will be notified when approved."}
+
 @app.post("/api/auth/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    if form_data.username != ADMIN_USERNAME or form_data.password != ADMIN_PASSWORD:
+    # Admin login
+    if form_data.username == ADMIN_USERNAME and form_data.password == ADMIN_PASSWORD:
+        token = create_access_token({"sub": form_data.username, "role": "admin"})
+        return {"access_token": token, "token_type": "bearer"}
+    # Regular user login
+    user = get_user_by_username(form_data.username)
+    if not user or not pwd_context.verify(form_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
-    token = create_access_token({"sub": form_data.username})
+    if user["status"] == "pending":
+        raise HTTPException(status_code=403, detail="Your access request is pending approval")
+    if user["status"] == "denied":
+        raise HTTPException(status_code=403, detail="Your access request was not approved")
+    token = create_access_token({"sub": user["username"], "role": "user"})
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/api/auth/me")
 async def me(username: str = Depends(verify_token)):
-    return {"username": username}
+    is_admin = username == ADMIN_USERNAME
+    return {"username": username, "is_admin": is_admin}
+
+# ── Admin endpoints ───────────────────────────────────────────────────────────
+@app.get("/api/admin/users")
+def admin_list_users(_: str = Depends(require_admin)):
+    return {"users": get_all_users()}
+
+@app.post("/api/admin/users/{user_id}/approve")
+def admin_approve(user_id: int, _: str = Depends(require_admin)):
+    set_user_status(user_id, "approved")
+    return {"status": "approved"}
+
+@app.post("/api/admin/users/{user_id}/deny")
+def admin_deny(user_id: int, _: str = Depends(require_admin)):
+    set_user_status(user_id, "denied")
+    return {"status": "denied"}
 
 # ── Public ────────────────────────────────────────────────────────────────────
 @app.get("/api/health")
