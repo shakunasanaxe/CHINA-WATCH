@@ -193,14 +193,13 @@ def list_articles(
     limit: int = Query(20, le=100),
     offset: int = Query(0),
     search: Optional[str] = Query(None),
-    _: str = Depends(verify_token),
 ):
     articles = get_articles(category=category, limit=limit, offset=offset, search=search)
     total = get_total_count(category=category, search=search)
     return {"articles": articles, "count": len(articles), "total": total, "offset": offset, "limit": limit}
 
 @app.get("/api/articles/{article_id}")
-def get_article(article_id: int, _: str = Depends(verify_token)):
+def get_article(article_id: int):
     art = get_article_by_id(article_id)
     if not art:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -211,7 +210,6 @@ async def summarize_article(
     article_id: int,
     x_api_key: Optional[str] = Header(None, alias="X-Api-Key"),
     x_provider: Optional[str] = Header(None, alias="X-Provider"),
-    _: str = Depends(verify_token),
 ):
     """On-demand AI summary for a single article."""
     art = get_article_by_id(article_id)
@@ -252,7 +250,7 @@ async def summarize_article(
 from config import DOMAIN_LABELS, DOMAIN_COLORS
 
 @app.get("/api/stats")
-def stats(_: str = Depends(verify_token)):
+def stats():
     s = get_stats()
     return {**s, "domain_labels": DOMAIN_LABELS, "domain_colors": DOMAIN_COLORS}
 
@@ -262,7 +260,7 @@ def domains():
 
 # ── Crawl (requires auth) ─────────────────────────────────────────────────────
 @app.post("/api/crawl/trigger")
-async def trigger_crawl(_: str = Depends(verify_token)):
+async def trigger_crawl():
     if crawl_status["running"]:
         return {"status": "already_running", "message": "Crawl already in progress"}
     loop = asyncio.get_event_loop()
@@ -270,7 +268,7 @@ async def trigger_crawl(_: str = Depends(verify_token)):
     return {"status": "started", "message": "Crawl initiated"}
 
 @app.get("/api/crawl/status")
-def crawl_status_endpoint(_: str = Depends(verify_token)):
+def crawl_status_endpoint():
     return crawl_status
 
 if __name__ == "__main__":

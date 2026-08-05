@@ -4,8 +4,7 @@ import {
   Globe, Cpu, Shield, Building2, TrendingUp,
   RefreshCw, Search, AlertCircle, Clock,
   ExternalLink, Loader2, Activity, Database, X,
-  LogOut, ChevronDown, ChevronUp, Sparkles, Lock,
-  UserPlus, CheckCircle, XCircle, Users
+  ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
 
 const API_BASE = (import.meta.env.VITE_API_BASE || "http://localhost:8000") + "/api";
@@ -32,175 +31,8 @@ const PROVIDERS = [
   { id: "anthropic",  label: "Anthropic",  badge: "Best quality",    badgeColor: "bg-orange-100 text-orange-700",placeholder: "sk-ant-...", keyLink: "https://console.anthropic.com/keys",   needsKey: true  },
 ];
 
-// ── Auth helpers ──────────────────────────────────────────────────────────────
-function useAuth() {
-  const [token, setToken] = useState(() => localStorage.getItem("cw_token") || "");
-  const login = (t) => { setToken(t); localStorage.setItem("cw_token", t); };
-  const logout = () => { setToken(""); localStorage.removeItem("cw_token"); };
-  return [token, login, logout];
-}
-
-function authHeaders(token) {
-  return { Authorization: `Bearer ${token}` };
-}
-
-// ── Auth screens (login + signup) ─────────────────────────────────────────────
-function AuthScreen({ onLogin }) {
-  const [view, setView] = useState("login"); // "login" | "signup" | "done"
-  return view === "login"
-    ? <LoginScreen onLogin={onLogin} onSignup={() => setView("signup")} />
-    : view === "signup"
-    ? <SignupScreen onBack={() => setView("login")} onDone={() => setView("done")} />
-    : <RequestSentScreen onBack={() => setView("login")} />;
-}
-
-function AuthCard({ children }) {
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center">
-            <Activity size={18} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-bold text-white text-lg tracking-tight">CHINA WATCH</h1>
-            <p className="text-slate-500 text-xs tracking-widest uppercase">Research Intelligence Platform</p>
-          </div>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function LoginScreen({ onLogin, onSignup }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const form = new FormData();
-      form.append("username", username);
-      form.append("password", password);
-      const res = await axios.post(`${API_BASE}/auth/login`, form);
-      onLogin(res.data.access_token);
-    } catch (e) {
-      setError(e.response?.data?.detail || "Incorrect username or password");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AuthCard>
-      <form onSubmit={handleLogin} className="bg-slate-900 rounded-2xl p-7 border border-slate-800">
-        <h2 className="text-white font-semibold mb-5 flex items-center gap-2">
-          <Lock size={15} className="text-slate-400" /> Sign in
-        </h2>
-        {error && <div className="bg-red-950 border border-red-800 text-red-300 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
-        <div className="space-y-3 mb-5">
-          <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        </div>
-        <button type="submit" disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-          {loading && <Loader2 size={14} className="animate-spin" />}
-          {loading ? "Signing in..." : "Sign In"}
-        </button>
-      </form>
-      <div className="text-center mt-4">
-        <p className="text-slate-500 text-sm">Don't have access?{" "}
-          <button onClick={onSignup} className="text-blue-400 hover:text-blue-300 font-medium underline">Request access →</button>
-        </p>
-      </div>
-    </AuthCard>
-  );
-}
-
-function SignupScreen({ onBack, onDone }) {
-  const [form, setForm] = useState({ name: "", email: "", username: "", password: "", institution: "", reason: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      await axios.post(`${API_BASE}/auth/signup`, form);
-      onDone();
-    } catch (e) {
-      setError(e.response?.data?.detail || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <AuthCard>
-      <form onSubmit={handleSubmit} className="bg-slate-900 rounded-2xl p-7 border border-slate-800">
-        <h2 className="text-white font-semibold mb-1 flex items-center gap-2">
-          <UserPlus size={15} className="text-slate-400" /> Request Access
-        </h2>
-        <p className="text-slate-500 text-xs mb-5">Your request will be reviewed by the platform admin.</p>
-        {error && <div className="bg-red-950 border border-red-800 text-red-300 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
-        <div className="space-y-3 mb-5">
-          <input type="text" placeholder="Full name *" value={form.name} onChange={set("name")} required
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="email" placeholder="Email address *" value={form.email} onChange={set("email")} required
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="text" placeholder="Institution / Organisation" value={form.institution} onChange={set("institution")}
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <textarea placeholder="Why do you need access? (optional)" value={form.reason} onChange={set("reason")} rows={2}
-            className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          <div className="border-t border-slate-800 pt-3">
-            <p className="text-slate-500 text-xs mb-2">Choose a username and password for your account:</p>
-            <div className="space-y-2">
-              <input type="text" placeholder="Username *" value={form.username} onChange={set("username")} required
-                className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <input type="password" placeholder="Password * (min 6 chars)" value={form.password} onChange={set("password")} required
-                className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-          </div>
-        </div>
-        <button type="submit" disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-          {loading && <Loader2 size={14} className="animate-spin" />}
-          {loading ? "Submitting..." : "Submit Request"}
-        </button>
-      </form>
-      <div className="text-center mt-4">
-        <button onClick={onBack} className="text-slate-500 hover:text-slate-300 text-sm">← Back to sign in</button>
-      </div>
-    </AuthCard>
-  );
-}
-
-function RequestSentScreen({ onBack }) {
-  return (
-    <AuthCard>
-      <div className="bg-slate-900 rounded-2xl p-8 border border-slate-800 text-center">
-        <CheckCircle size={40} className="text-green-500 mx-auto mb-4" />
-        <h2 className="text-white font-bold text-lg mb-2">Request Submitted</h2>
-        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-          Your access request has been sent to the admin for review. You'll be able to sign in once it's approved.
-        </p>
-        <button onClick={onBack} className="text-blue-400 hover:text-blue-300 text-sm font-medium">← Back to sign in</button>
-      </div>
-    </AuthCard>
-  );
-}
-
 // ── AI Summary modal ──────────────────────────────────────────────────────────
-function SummarizeModal({ article, token, onClose, onDone }) {
+function SummarizeModal({ article, onClose, onDone }) {
   const [selectedProvider, setSelectedProvider] = useState("groq");
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("cw_ai_key") || "");
   const [loading, setLoading] = useState(false);
@@ -216,7 +48,7 @@ function SummarizeModal({ article, token, onClose, onDone }) {
       const res = await axios.post(
         `${API_BASE}/articles/${article.id}/summarize`,
         {},
-        { headers: { ...authHeaders(token), "X-Api-Key": apiKey, "X-Provider": selectedProvider } }
+        { headers: { "X-Api-Key": apiKey, "X-Provider": selectedProvider } }
       );
       onDone(res.data);
     } catch (e) {
@@ -291,7 +123,7 @@ function SummarizeModal({ article, token, onClose, onDone }) {
 }
 
 // ── Article card ──────────────────────────────────────────────────────────────
-function ArticleCard({ article: initialArticle, token }) {
+function ArticleCard({ article: initialArticle }) {
   const [article, setArticle] = useState(initialArticle);
   const [expanded, setExpanded] = useState(false);
   const [showSummarize, setShowSummarize] = useState(false);
@@ -300,17 +132,11 @@ function ArticleCard({ article: initialArticle, token }) {
   return (
     <>
       <div className="bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
-        <button
-          className="w-full text-left px-4 py-3.5"
-          onClick={() => setExpanded(e => !e)}
-        >
+        <button className="w-full text-left px-4 py-3.5" onClick={() => setExpanded(e => !e)}>
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ color, background: color + "18" }}
-                >
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color, background: color + "18" }}>
                   {article.source_site}
                 </span>
                 {article.publish_date && (
@@ -344,9 +170,7 @@ function ArticleCard({ article: initialArticle, token }) {
                 <div className="mb-3">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Summary</p>
                   <div className="text-sm text-slate-700 space-y-1 leading-relaxed">
-                    {article.summary.split("\n").map((b, i) => (
-                      <p key={i}>{b}</p>
-                    ))}
+                    {article.summary.split("\n").map((b, i) => <p key={i}>{b}</p>)}
                   </div>
                 </div>
                 {article.significance && (
@@ -365,19 +189,13 @@ function ArticleCard({ article: initialArticle, token }) {
 
             <div className="flex items-center gap-2 mt-3">
               {article.original_url && (
-                <a
-                  href={article.original_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                >
+                <a href={article.original_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium">
                   <ExternalLink size={11} /> View Source
                 </a>
               )}
-              <button
-                onClick={() => setShowSummarize(true)}
-                className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium ml-auto bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
+              <button onClick={() => setShowSummarize(true)}
+                className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium ml-auto bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
                 <Sparkles size={11} />
                 {article.processed === 1 ? "Re-analyse" : "AI Summary"}
               </button>
@@ -389,7 +207,6 @@ function ArticleCard({ article: initialArticle, token }) {
       {showSummarize && (
         <SummarizeModal
           article={article}
-          token={token}
           onClose={() => setShowSummarize(false)}
           onDone={(result) => {
             setArticle(a => ({ ...a, ...result, processed: 1 }));
@@ -431,126 +248,41 @@ function StatBar({ stats }) {
   );
 }
 
-// ── Main app ──────────────────────────────────────────────────────────────────
-// ── Admin panel ───────────────────────────────────────────────────────────────
-function AdminPanel({ token, onClose }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/admin/users`, { headers: authHeaders(token) });
-      setUsers(res.data.users);
-    } catch {}
-    setLoading(false);
-  };
-
-  const action = async (id, type) => {
-    await axios.post(`${API_BASE}/admin/users/${id}/${type}`, {}, { headers: authHeaders(token) });
-    fetchUsers();
-  };
-
-  useEffect(() => { fetchUsers(); }, []);
-
-  const pending = users.filter(u => u.status === "pending");
-  const others = users.filter(u => u.status !== "pending");
+function DomainGroupedView({ articles }) {
+  const byDomain = {};
+  DOMAINS.slice(1).forEach(d => { byDomain[d.id] = []; });
+  articles.forEach(a => { if (byDomain[a.domain_category]) byDomain[a.domain_category].push(a); });
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Users size={16} className="text-slate-600" />
-            <h3 className="font-bold text-slate-900">Access Requests</h3>
-            {pending.length > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{pending.length}</span>
-            )}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {DOMAINS.slice(1).map(domain => {
+        const arts = byDomain[domain.id] || [];
+        if (!arts.length) return null;
+        const Icon = domain.icon;
+        return (
+          <div key={domain.id}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: domain.color }}>
+                <Icon size={12} className="text-white" />
+              </div>
+              <h2 className="font-semibold text-sm text-slate-800">{domain.label}</h2>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto"
+                style={{ color: domain.color, background: domain.color + "18" }}>
+                {arts.length}
+              </span>
+            </div>
+            <div className="grid gap-2">
+              {arts.map(a => <ArticleCard key={a.id} article={a} />)}
+            </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-6">
-          {loading ? <Loader2 size={20} className="animate-spin text-slate-400 mx-auto" /> : (
-            <>
-              {pending.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Pending Review</p>
-                  <div className="space-y-3">
-                    {pending.map(u => (
-                      <div key={u.id} className="border border-amber-200 bg-amber-50 rounded-xl p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900">{u.name}</p>
-                            <p className="text-sm text-slate-500">{u.email} · @{u.username}</p>
-                            {u.institution && <p className="text-sm text-slate-600 mt-0.5">{u.institution}</p>}
-                            {u.reason && <p className="text-sm text-slate-500 mt-1 italic">"{u.reason}"</p>}
-                            <p className="text-xs text-slate-400 mt-1">{u.created_at?.slice(0, 10)}</p>
-                          </div>
-                          <div className="flex gap-2 flex-shrink-0">
-                            <button onClick={() => action(u.id, "approve")}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-semibold transition-colors">
-                              <CheckCircle size={12} /> Approve
-                            </button>
-                            <button onClick={() => action(u.id, "deny")}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold transition-colors">
-                              <XCircle size={12} /> Deny
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {others.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">All Users</p>
-                  <div className="space-y-2">
-                    {others.map(u => (
-                      <div key={u.id} className="border border-slate-100 rounded-xl p-3 flex items-center gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800">{u.name} <span className="text-slate-400">@{u.username}</span></p>
-                          <p className="text-xs text-slate-500">{u.email}{u.institution ? ` · ${u.institution}` : ""}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            u.status === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                          }`}>{u.status}</span>
-                          {u.status === "denied" && (
-                            <button onClick={() => action(u.id, "approve")}
-                              className="text-xs text-blue-600 hover:underline">Re-approve</button>
-                          )}
-                          {u.status === "approved" && (
-                            <button onClick={() => action(u.id, "deny")}
-                              className="text-xs text-red-500 hover:underline">Revoke</button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {users.length === 0 && (
-                <div className="text-center py-10 text-slate-400">
-                  <Users size={32} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No access requests yet</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }
 
+// ── Main app ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [token, login, logout] = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
   const [activeTab, setActiveTab] = useState("all");
   const [articles, setArticles] = useState([]);
   const [total, setTotal] = useState(0);
@@ -566,13 +298,12 @@ export default function App() {
   const searchTimer = useRef(null);
 
   const fetchArticles = useCallback(async (cat, search, off = 0, append = false) => {
-    if (!token) return;
     if (append) setLoadingMore(true); else setLoading(true);
     try {
       const params = { limit: PAGE_SIZE, offset: off };
       if (cat !== "all") params.category = cat;
       if (search) params.search = search;
-      const res = await axios.get(`${API_BASE}/articles`, { params, headers: authHeaders(token) });
+      const res = await axios.get(`${API_BASE}/articles`, { params });
       if (append) {
         setArticles(a => [...a, ...res.data.articles]);
       } else {
@@ -581,20 +312,19 @@ export default function App() {
       }
       setTotal(res.data.total);
     } catch (e) {
-      if (e.response?.status === 401) logout();
+      setErrorMsg("Failed to load articles");
     } finally {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [token]);
+  }, []);
 
   const fetchStats = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await axios.get(`${API_BASE}/stats`, { headers: authHeaders(token) });
+      const res = await axios.get(`${API_BASE}/stats`);
       setStats(res.data);
     } catch {}
-  }, [token]);
+  }, []);
 
   const loadMore = () => {
     const newOffset = offset + PAGE_SIZE;
@@ -603,9 +333,8 @@ export default function App() {
   };
 
   const pollCrawlStatus = useCallback(async () => {
-    if (!token) return;
     try {
-      const res = await axios.get(`${API_BASE}/crawl/status`, { headers: authHeaders(token) });
+      const res = await axios.get(`${API_BASE}/crawl/status`);
       setCrawlStatus(res.data);
       if (!res.data.running) {
         clearInterval(pollRef.current);
@@ -613,11 +342,11 @@ export default function App() {
         fetchStats();
       }
     } catch {}
-  }, [token, activeTab, searchQuery]);
+  }, [activeTab, searchQuery]);
 
   const triggerCrawl = async () => {
     try {
-      await axios.post(`${API_BASE}/crawl/trigger`, {}, { headers: authHeaders(token) });
+      await axios.post(`${API_BASE}/crawl/trigger`);
       setCrawlStatus({ running: true, phase: "searching", progress: 0, total: 16, current_site: "" });
       pollRef.current = setInterval(pollCrawlStatus, 3000);
     } catch (e) {
@@ -625,7 +354,6 @@ export default function App() {
     }
   };
 
-  // Debounced search
   const handleSearchInput = (val) => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
@@ -637,32 +365,18 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (token) {
-      fetchArticles(activeTab, searchQuery, 0, false);
-      fetchStats();
-      // Check if admin and get pending count
-      axios.get(`${API_BASE}/auth/me`, { headers: authHeaders(token) }).then(res => {
-        setIsAdmin(res.data.is_admin);
-        if (res.data.is_admin) {
-          axios.get(`${API_BASE}/admin/users`, { headers: authHeaders(token) }).then(r => {
-            setPendingCount(r.data.users.filter(u => u.status === "pending").length);
-          }).catch(() => {});
-        }
-      }).catch(() => {});
-    }
-  }, [token, activeTab]);
+    fetchArticles(activeTab, searchQuery, 0, false);
+    fetchStats();
+  }, [activeTab]);
 
   useEffect(() => {
     return () => clearInterval(pollRef.current);
   }, []);
 
-  if (!token) return <AuthScreen onLogin={login} />;
-
   const hasMore = articles.length < total;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50" style={{ fontFamily: "Century Gothic, Century, CenturyGothic, AppleGothic, sans-serif" }}>
-      {/* Header */}
       <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -680,48 +394,28 @@ export default function App() {
               const Icon = d.icon;
               const active = activeTab === d.id;
               return (
-                <button
-                  key={d.id}
+                <button key={d.id}
                   onClick={() => { setActiveTab(d.id); setOffset(0); setSearchInput(""); setSearchQuery(""); }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     active ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-slate-800"
                   }`}
                 >
-                  <Icon size={12} />
-                  {d.label}
+                  <Icon size={12} /> {d.label}
                 </button>
               );
             })}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={triggerCrawl}
-              disabled={crawlStatus.running}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors"
-            >
-              {crawlStatus.running ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-              {crawlStatus.running ? `${crawlStatus.current_site || "Crawling"}...` : "Refresh"}
-            </button>
-            {isAdmin && (
-              <button onClick={() => setShowAdmin(true)}
-                className="relative text-slate-400 hover:text-white p-2" title="Manage users">
-                <Users size={14} />
-                {pendingCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            )}
-            <button onClick={logout} className="text-slate-500 hover:text-slate-300 p-2" title="Sign out">
-              <LogOut size={14} />
-            </button>
-          </div>
+          <button
+            onClick={triggerCrawl}
+            disabled={crawlStatus.running}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors"
+          >
+            {crawlStatus.running ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            {crawlStatus.running ? `${crawlStatus.current_site || "Crawling"}...` : "Refresh"}
+          </button>
         </div>
       </header>
-
-      {showAdmin && <AdminPanel token={token} onClose={() => { setShowAdmin(false); axios.get(`${API_BASE}/admin/users`, { headers: authHeaders(token) }).then(r => setPendingCount(r.data.users.filter(u => u.status === "pending").length)).catch(() => {}); }} />}
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-5">
         {stats && <div className="mb-4"><StatBar stats={stats} /></div>}
@@ -734,7 +428,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Search */}
         <div className="relative mb-5">
           <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -751,7 +444,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 size={28} className="animate-spin text-slate-400" />
@@ -779,20 +471,17 @@ export default function App() {
             </div>
 
             {activeTab === "all" && !searchQuery ? (
-              <DomainGroupedView articles={articles} token={token} />
+              <DomainGroupedView articles={articles} />
             ) : (
               <div className="grid gap-2">
-                {articles.map(a => <ArticleCard key={a.id} article={a} token={token} />)}
+                {articles.map(a => <ArticleCard key={a.id} article={a} />)}
               </div>
             )}
 
             {hasMore && (
               <div className="flex justify-center mt-6">
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-medium text-slate-700 transition-colors disabled:opacity-50"
-                >
+                <button onClick={loadMore} disabled={loadingMore}
+                  className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-medium text-slate-700 transition-colors disabled:opacity-50">
                   {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
                   {loadingMore ? "Loading..." : `Load more (${total - articles.length} remaining)`}
                 </button>
@@ -801,39 +490,6 @@ export default function App() {
           </>
         )}
       </main>
-    </div>
-  );
-}
-
-function DomainGroupedView({ articles, token }) {
-  const byDomain = {};
-  DOMAINS.slice(1).forEach(d => { byDomain[d.id] = []; });
-  articles.forEach(a => { if (byDomain[a.domain_category]) byDomain[a.domain_category].push(a); });
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {DOMAINS.slice(1).map(domain => {
-        const arts = byDomain[domain.id] || [];
-        if (!arts.length) return null;
-        const Icon = domain.icon;
-        return (
-          <div key={domain.id}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: domain.color }}>
-                <Icon size={12} className="text-white" />
-              </div>
-              <h2 className="font-semibold text-sm text-slate-800">{domain.label}</h2>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto"
-                style={{ color: domain.color, background: domain.color + "18" }}>
-                {arts.length}
-              </span>
-            </div>
-            <div className="grid gap-2">
-              {arts.map(a => <ArticleCard key={a.id} article={a} token={token} />)}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
