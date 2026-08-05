@@ -31,6 +31,9 @@ def load_existing() -> list:
     if OUT_FILE.exists():
         try:
             data = json.loads(OUT_FILE.read_text())
+            # Handle both formats: plain list or {"articles": [...], ...}
+            if isinstance(data, dict):
+                data = data.get("articles", [])
             logger.info(f"Loaded {len(data)} existing articles")
             return data
         except Exception as e:
