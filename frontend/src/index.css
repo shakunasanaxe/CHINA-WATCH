@@ -1,3 +1,55 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Takshashila design tokens */
+:root {
+  --tk-primary:      #620d3c;
+  --tk-primary-dark: #4a0a2e;
+  --tk-primary-soft: #f5e6ec;
+  --tk-gold:         #f1a222;
+  --tk-gold-soft:    #fcf0d9;
+
+  --tk-bg:        #FFFFFF;
+  --tk-bg-deep:   #F7F5F2;
+  --tk-ink:       #171413;
+  --tk-ink-70:    rgba(23,20,19,0.70);
+  --tk-ink-50:    rgba(23,20,19,0.50);
+  --tk-ink-20:    rgba(23,20,19,0.16);
+  --tk-ink-10:    rgba(23,20,19,0.08);
+  --tk-rule:      1px solid rgba(23,20,19,0.16);
+
+  --tk-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --tk-mono: 'Roboto Mono', ui-monospace, monospace;
+
+  --tk-max:    1240px;
+  --tk-pad-x:  40px;
+}
+
+@media (max-width: 960px) { :root { --tk-pad-x: 24px; } }
+@media (max-width: 560px) { :root { --tk-pad-x: 18px; } }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--tk-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--tk-ink);
+  background: #FDFDFD;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Eyebrow / meta */
+.tk-eyebrow {
+  font-family: var(--tk-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--tk-ink-50);
+}
+
+.tk-meta {
+  font-family: var(--tk-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tk-ink-50);
+}

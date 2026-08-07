@@ -1,34 +1,27 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Globe, Cpu, Shield, Building2, TrendingUp,
-  RefreshCw, Search, AlertCircle, Clock,
-  ExternalLink, Loader2, Activity, Database, X,
-  ChevronDown, ChevronUp, Sparkles,
-} from "lucide-react";
 
 const PAGE_SIZE = 20;
 
 const DOMAINS = [
-  { id: "all",            label: "All Sources",       icon: Globe,      color: "#0f172a" },
-  { id: "economy",        label: "Economy",            icon: TrendingUp, color: "#2563eb" },
-  { id: "technology",     label: "Technology",         icon: Cpu,        color: "#7c3aed" },
-  { id: "military",       label: "Military",           icon: Shield,     color: "#dc2626" },
-  { id: "governance",     label: "Local & Governance", icon: Building2,  color: "#059669" },
-  { id: "foreign_policy", label: "Foreign Policy",     icon: Globe,      color: "#d97706" },
+  { id: "all",            label: "All Sources",       code: "ALL" },
+  { id: "economy",        label: "Economy",            code: "ECO" },
+  { id: "technology",     label: "Technology",         code: "TEC" },
+  { id: "military",       label: "Military",           code: "MIL" },
+  { id: "governance",     label: "Governance",         code: "GOV" },
+  { id: "foreign_policy", label: "Foreign Policy",     code: "FP"  },
 ];
 
-const DOMAIN_COLORS = {
-  economy: "#2563eb", technology: "#7c3aed", military: "#dc2626",
-  governance: "#059669", foreign_policy: "#d97706",
+const DOMAIN_CODES = {
+  economy: "ECO", technology: "TEC", military: "MIL",
+  governance: "GOV", foreign_policy: "FP",
 };
 
 const PROVIDERS = [
-  { id: "groq",       label: "Groq",       badge: "Free",           badgeColor: "bg-green-100 text-green-700",   placeholder: "gsk_...",    keyLink: "https://console.groq.com/keys",      needsKey: true  },
-  { id: "openrouter", label: "OpenRouter", badge: "Free tier",      badgeColor: "bg-purple-100 text-purple-700", placeholder: "sk-or-...",  keyLink: "https://openrouter.ai/keys",         needsKey: true  },
-  { id: "anthropic",  label: "Anthropic",  badge: "Best quality",   badgeColor: "bg-orange-100 text-orange-700", placeholder: "sk-ant-...", keyLink: "https://console.anthropic.com/keys", needsKey: true  },
+  { id: "groq",       label: "Groq",      badge: "Free",         placeholder: "gsk_...",    keyLink: "https://console.groq.com/keys"          },
+  { id: "openrouter", label: "OpenRouter", badge: "Free tier",    placeholder: "sk-or-...",  keyLink: "https://openrouter.ai/keys"             },
+  { id: "anthropic",  label: "Anthropic",  badge: "Best quality", placeholder: "sk-ant-...", keyLink: "https://console.anthropic.com/keys"     },
 ];
 
-// ── Client-side AI call (direct from browser) ─────────────────────────────────
 const PROVIDER_MODELS = {
   groq:       "llama-3.1-8b-instant",
   openrouter: "meta-llama/llama-3.1-8b-instruct:free",
@@ -46,7 +39,7 @@ async function callAI(provider, apiKey, title, text, source) {
   const content = `SOURCE: ${source}\nTITLE: ${title}\n\nCONTENT:\n${text.slice(0, 2000)}`;
   const messages = [
     { role: "system", content: ANALYSIS_SYSTEM },
-    { role: "user",   content: `Analyze this article:\n\n${content}` },
+    { role: "user",   content: `Analyse this article:\n\n${content}` },
   ];
 
   let url, headers, body;
@@ -70,7 +63,7 @@ async function callAI(provider, apiKey, title, text, source) {
     body = {
       model: PROVIDER_MODELS.anthropic,
       system: ANALYSIS_SYSTEM,
-      messages: [{ role: "user", content: `Analyze this article:\n\n${content}` }],
+      messages: [{ role: "user", content: `Analyse this article:\n\n${content}` }],
       max_tokens: 800,
     };
   }
@@ -91,6 +84,16 @@ async function callAI(provider, apiKey, title, text, source) {
   return JSON.parse(raw.slice(start, end));
 }
 
+// ── Spinner ───────────────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" style={{ animation: "spin 0.8s linear infinite" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="32" strokeDashoffset="12" />
+    </svg>
+  );
+}
+
 // ── AI Summary modal ──────────────────────────────────────────────────────────
 function SummarizeModal({ article, onClose, onDone }) {
   const [selectedProvider, setSelectedProvider] = useState("groq");
@@ -99,7 +102,7 @@ function SummarizeModal({ article, onClose, onDone }) {
   const [error, setError] = useState("");
   const provider = PROVIDERS.find(p => p.id === selectedProvider);
 
-  const handleSummarize = async () => {
+  const handleSummarise = async () => {
     setLoading(true);
     setError("");
     try {
@@ -117,156 +120,229 @@ function SummarizeModal({ article, onClose, onDone }) {
         significance: result.significance || "",
       });
     } catch (e) {
-      setError(e.message || "AI analysis failed. Check your API key.");
+      setError(e.message || "Analysis failed. Check your API key.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-7 w-full max-w-md">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-purple-600" />
-            <h3 className="font-bold text-slate-900">AI Analysis</h3>
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(23,20,19,0.6)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 100, padding: "0 var(--tk-pad-x)",
+    }}>
+      <div style={{
+        background: "var(--tk-bg)", border: "var(--tk-rule)",
+        width: "100%", maxWidth: 520,
+      }}>
+        {/* Modal header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 24px", borderBottom: "var(--tk-rule)",
+        }}>
+          <span style={{ fontFamily: "var(--tk-mono)", fontSize: 11, letterSpacing: "0.14em", color: "var(--tk-ink-50)" }}>
+            AI ANALYSIS
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--tk-ink-50)", fontSize: 18, lineHeight: 1 }}>×</button>
+        </div>
+
+        <div style={{ padding: "24px" }}>
+          {/* Article title */}
+          <p style={{
+            fontSize: 14, fontWeight: 500, color: "var(--tk-ink)", lineHeight: 1.4,
+            borderLeft: "2px solid var(--tk-primary)", paddingLeft: 12, marginBottom: 20,
+            textWrap: "pretty",
+          }}>
+            {article.english_title || article.original_title}
+          </p>
+
+          {/* Provider selector */}
+          <p className="tk-meta" style={{ marginBottom: 10 }}>CHOOSE PROVIDER</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderTop: "var(--tk-rule)", borderLeft: "var(--tk-rule)", marginBottom: 20 }}>
+            {PROVIDERS.map(p => (
+              <button key={p.id} onClick={() => setSelectedProvider(p.id)} style={{
+                padding: "10px 12px", textAlign: "left", cursor: "pointer",
+                borderRight: "var(--tk-rule)", borderBottom: "var(--tk-rule)",
+                background: selectedProvider === p.id ? "var(--tk-primary)" : "var(--tk-bg)",
+                color: selectedProvider === p.id ? "#fff" : "var(--tk-ink)",
+                border: "none", borderRight: "var(--tk-rule)", borderBottom: "var(--tk-rule)",
+                outline: selectedProvider === p.id ? "none" : "none",
+              }}>
+                <div style={{ fontFamily: "var(--tk-sans)", fontSize: 13, fontWeight: 500, marginBottom: 2 }}>{p.label}</div>
+                <div style={{ fontFamily: "var(--tk-mono)", fontSize: 10, letterSpacing: "0.08em", opacity: 0.7 }}>{p.badge}</div>
+              </button>
+            ))}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+          {/* Recreate grid border */}
+          <style>{`.provider-grid button { border: none; border-right: var(--tk-rule); border-bottom: var(--tk-rule); }`}</style>
+
+          {/* API key */}
+          <p style={{ fontSize: 12, color: "var(--tk-ink-50)", marginBottom: 6 }}>
+            <a href={provider.keyLink} target="_blank" rel="noopener noreferrer"
+              style={{ color: "var(--tk-primary)", textDecoration: "underline" }}>
+              Get a free {provider.label} key ↗
+            </a>
+          </p>
+          <input
+            type="password"
+            placeholder={provider.placeholder}
+            value={apiKey}
+            onChange={e => setApiKey(e.target.value)}
+            style={{
+              width: "100%", padding: "10px 12px",
+              border: "var(--tk-rule)", background: "var(--tk-bg)",
+              fontFamily: "var(--tk-mono)", fontSize: 13,
+              color: "var(--tk-ink)", outline: "none",
+              borderRadius: 0, marginBottom: 16,
+            }}
+          />
+
+          {error && (
+            <p style={{ fontSize: 13, color: "#c0392b", marginBottom: 12,
+              borderLeft: "2px solid #c0392b", paddingLeft: 10 }}>{error}</p>
+          )}
+
+          <button
+            onClick={handleSummarise}
+            disabled={apiKey.length < 10 || loading}
+            style={{
+              width: "100%", padding: "12px 24px",
+              background: "var(--tk-primary)", color: "#fff",
+              border: "none", cursor: apiKey.length < 10 || loading ? "not-allowed" : "pointer",
+              opacity: apiKey.length < 10 ? 0.4 : 1,
+              fontFamily: "var(--tk-mono)", fontSize: 12, letterSpacing: "0.1em",
+              textTransform: "uppercase", display: "flex", alignItems: "center",
+              justifyContent: "center", gap: 8,
+            }}
+          >
+            {loading && <Spinner />}
+            {loading ? "Analysing..." : "Generate AI Summary →"}
+          </button>
+          <p style={{ fontFamily: "var(--tk-mono)", fontSize: 10, color: "var(--tk-ink-50)", marginTop: 10, textAlign: "center", letterSpacing: "0.06em" }}>
+            API KEY STORED IN YOUR BROWSER ONLY
+          </p>
         </div>
-
-        <p className="text-slate-600 text-sm mb-5 line-clamp-2 bg-slate-50 rounded-lg px-3 py-2 font-medium">
-          {article.english_title || article.original_title}
-        </p>
-
-        <p className="text-slate-600 text-sm mb-3">Choose AI provider:</p>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {PROVIDERS.map(p => (
-            <button key={p.id} onClick={() => setSelectedProvider(p.id)}
-              className={`text-left p-3 rounded-xl border-2 transition-all ${selectedProvider === p.id ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"}`}>
-              <div className="font-semibold text-slate-900 text-sm">{p.label}</div>
-              <div className={`text-[10px] px-1 py-0.5 rounded-full font-medium mt-1 inline-block ${p.badgeColor}`}>{p.badge}</div>
-            </button>
-          ))}
-        </div>
-
-        <p className="text-xs text-slate-500 mb-1.5">
-          <a href={provider.keyLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-            Get a free {provider.label} key →
-          </a>
-        </p>
-        <input
-          type="password"
-          placeholder={provider.placeholder}
-          value={apiKey}
-          onChange={e => setApiKey(e.target.value)}
-          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-slate-900 mb-4"
-        />
-
-        {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
-
-        <button
-          onClick={handleSummarize}
-          disabled={apiKey.length < 10 || loading}
-          className="w-full bg-slate-900 text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-          {loading ? "Analysing..." : "Generate AI Summary"}
-        </button>
-        <p className="text-slate-400 text-xs mt-3 text-center">API key stored in your browser only — never sent to us</p>
       </div>
     </div>
   );
 }
 
-// ── Article card ──────────────────────────────────────────────────────────────
-function ArticleCard({ article: initialArticle }) {
+// ── Article row ───────────────────────────────────────────────────────────────
+function ArticleRow({ article: initialArticle, index }) {
   const [article, setArticle] = useState(initialArticle);
   const [expanded, setExpanded] = useState(false);
-  const [showSummarize, setShowSummarize] = useState(false);
-  const color = DOMAIN_COLORS[article.domain_category] || "#64748b";
+  const [showSummarise, setShowSummarise] = useState(false);
+  const code = DOMAIN_CODES[article.domain_category] || "—";
+  const num = String(index + 1).padStart(2, "0");
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
-        <button className="w-full text-left px-4 py-3.5" onClick={() => setExpanded(e => !e)}>
-          <div className="flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color, background: color + "18" }}>
-                  {article.source_site}
-                </span>
-                {article.publish_date && (
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Clock size={9} /> {article.publish_date}
-                  </span>
-                )}
-                {article.summary && (
-                  <span className="text-[10px] text-purple-600 flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded-full">
-                    <Sparkles size={9} /> AI
-                  </span>
-                )}
-              </div>
-              <p className="text-sm font-semibold text-slate-800 leading-snug">
-                {article.english_title || article.original_title}
-              </p>
-              {article.original_title !== article.english_title && article.original_title && (
-                <p className="text-xs text-slate-400 mt-0.5 truncate">{article.original_title}</p>
-              )}
-            </div>
-            <div className="flex-shrink-0 text-slate-400 mt-0.5">
-              {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-            </div>
-          </div>
+      <div style={{
+        borderBottom: "var(--tk-rule)",
+        background: expanded ? "var(--tk-bg-deep)" : "var(--tk-bg)",
+        transition: "background 0.15s ease",
+      }}>
+        {/* Row header */}
+        <button
+          onClick={() => setExpanded(e => !e)}
+          style={{
+            width: "100%", display: "grid",
+            gridTemplateColumns: "40px 56px 1fr auto",
+            alignItems: "baseline", gap: "0 16px",
+            padding: "14px var(--tk-pad-x)", textAlign: "left",
+            background: "none", border: "none", cursor: "pointer",
+          }}
+        >
+          {/* Number */}
+          <span style={{ fontFamily: "var(--tk-mono)", fontSize: 11, color: "var(--tk-primary)", letterSpacing: "0.06em" }}>
+            {num}
+          </span>
+          {/* Category code */}
+          <span style={{ fontFamily: "var(--tk-mono)", fontSize: 10, letterSpacing: "0.12em", color: "var(--tk-ink-50)", textTransform: "uppercase" }}>
+            {code}
+          </span>
+          {/* Title */}
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--tk-ink)", lineHeight: 1.4, textWrap: "pretty" }}>
+            {article.english_title || article.original_title}
+            {article.original_title && article.original_title !== article.english_title && (
+              <span style={{ display: "block", fontFamily: "var(--tk-mono)", fontSize: 10, color: "var(--tk-ink-50)", fontWeight: 400, marginTop: 3, letterSpacing: "0.04em" }}>
+                {article.original_title}
+              </span>
+            )}
+          </span>
+          {/* Date + source */}
+          <span style={{ fontFamily: "var(--tk-mono)", fontSize: 10, color: "var(--tk-ink-50)", letterSpacing: "0.08em", whiteSpace: "nowrap", textAlign: "right" }}>
+            {article.source_site}
+            {article.publish_date && <><br />{article.publish_date}</>}
+            {article.summary && <><br /><span style={{ color: "var(--tk-primary)" }}>AI ✓</span></>}
+          </span>
         </button>
 
+        {/* Expanded content */}
         {expanded && (
-          <div className="px-4 pb-4 border-t border-slate-50 pt-3">
-            {article.summary ? (
-              <>
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Summary</p>
-                  <div className="text-sm text-slate-700 space-y-1 leading-relaxed">
-                    {article.summary.split("\n").map((b, i) => <p key={i}>{b}</p>)}
+          <div style={{ padding: "0 var(--tk-pad-x) 20px", borderTop: "var(--tk-rule)" }}>
+            <div style={{ paddingTop: 16 }}>
+              {article.summary ? (
+                <>
+                  <p className="tk-meta" style={{ marginBottom: 8 }}>SUMMARY</p>
+                  <div style={{ borderLeft: "2px solid var(--tk-primary)", paddingLeft: 16, marginBottom: 16 }}>
+                    {article.summary.split("\n").map((b, i) => (
+                      <p key={i} style={{ fontSize: 14, color: "var(--tk-ink-70)", lineHeight: 1.6, marginBottom: 4 }}>{b}</p>
+                    ))}
                   </div>
-                </div>
-                {article.significance && (
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Significance</p>
-                    <p className="text-sm text-slate-600 leading-relaxed">{article.significance}</p>
-                  </div>
-                )}
-              </>
-            ) : article.raw_text ? (
-              <div className="mb-3">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Content</p>
-                <p className="text-sm text-slate-600 leading-relaxed line-clamp-6">{article.raw_text}</p>
-              </div>
-            ) : null}
+                  {article.significance && (
+                    <>
+                      <p className="tk-meta" style={{ marginBottom: 8 }}>SIGNIFICANCE</p>
+                      <p style={{ fontSize: 14, color: "var(--tk-ink-70)", lineHeight: 1.6, marginBottom: 16, textWrap: "pretty" }}>
+                        {article.significance}
+                      </p>
+                    </>
+                  )}
+                </>
+              ) : article.raw_text ? (
+                <>
+                  <p className="tk-meta" style={{ marginBottom: 8 }}>CONTENT</p>
+                  <p style={{ fontSize: 14, color: "var(--tk-ink-70)", lineHeight: 1.65, marginBottom: 16,
+                    display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {article.raw_text}
+                  </p>
+                </>
+              ) : null}
 
-            <div className="flex items-center gap-2 mt-3">
-              {article.original_url && (
-                <a href={article.original_url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium">
-                  <ExternalLink size={11} /> View Source
-                </a>
-              )}
-              <button onClick={() => setShowSummarize(true)}
-                className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium ml-auto bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
-                <Sparkles size={11} />
-                {article.summary ? "Re-analyse" : "AI Summary"}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                {article.original_url && (
+                  <a href={article.original_url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontFamily: "var(--tk-mono)", fontSize: 11, color: "var(--tk-primary)",
+                      letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "underline" }}>
+                    View source ↗
+                  </a>
+                )}
+                <button onClick={() => setShowSummarise(true)} style={{
+                  marginLeft: "auto", background: "none", border: "var(--tk-rule)",
+                  padding: "6px 14px", cursor: "pointer",
+                  fontFamily: "var(--tk-mono)", fontSize: 11, letterSpacing: "0.08em",
+                  textTransform: "uppercase", color: "var(--tk-primary)",
+                  transition: "background 0.15s ease",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--tk-primary-soft)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  {article.summary ? "Re-analyse →" : "AI Summary →"}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {showSummarize && (
+      {showSummarise && (
         <SummarizeModal
           article={article}
-          onClose={() => setShowSummarize(false)}
-          onDone={(result) => {
+          onClose={() => setShowSummarise(false)}
+          onDone={result => {
             setArticle(a => ({ ...a, ...result }));
-            setShowSummarize(false);
+            setShowSummarise(false);
             setExpanded(true);
           }}
         />
@@ -275,36 +351,32 @@ function ArticleCard({ article: initialArticle }) {
   );
 }
 
-// ── Domain grouped view ───────────────────────────────────────────────────────
-function DomainGroupedView({ articles }) {
-  const byDomain = {};
-  DOMAINS.slice(1).forEach(d => { byDomain[d.id] = []; });
-  articles.forEach(a => { if (byDomain[a.domain_category]) byDomain[a.domain_category].push(a); });
-
+// ── Domain section (grouped view) ─────────────────────────────────────────────
+function DomainSection({ domain, articles, globalOffset }) {
+  const [expanded, setExpanded] = useState(true);
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {DOMAINS.slice(1).map(domain => {
-        const arts = byDomain[domain.id] || [];
-        if (!arts.length) return null;
-        const Icon = domain.icon;
-        return (
-          <div key={domain.id}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: domain.color }}>
-                <Icon size={12} className="text-white" />
-              </div>
-              <h2 className="font-semibold text-sm text-slate-800">{domain.label}</h2>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto"
-                style={{ color: domain.color, background: domain.color + "18" }}>
-                {arts.length}
-              </span>
-            </div>
-            <div className="grid gap-2">
-              {arts.map(a => <ArticleCard key={a.id || a.original_url} article={a} />)}
-            </div>
-          </div>
-        );
-      })}
+    <div style={{ borderBottom: "2px solid var(--tk-ink)" }}>
+      {/* Section header */}
+      <button onClick={() => setExpanded(e => !e)} style={{
+        width: "100%", display: "flex", alignItems: "baseline", justifyContent: "space-between",
+        padding: "18px var(--tk-pad-x)", background: "none", border: "none", cursor: "pointer",
+        borderBottom: expanded ? "var(--tk-rule)" : "none",
+      }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
+          <span style={{ fontFamily: "var(--tk-mono)", fontSize: 11, color: "var(--tk-primary)", letterSpacing: "0.1em" }}>
+            {domain.code}
+          </span>
+          <span style={{ fontSize: 18, fontWeight: 500, letterSpacing: "-0.005em", color: "var(--tk-ink)" }}>
+            {domain.label}
+          </span>
+        </div>
+        <span style={{ fontFamily: "var(--tk-mono)", fontSize: 10, color: "var(--tk-ink-50)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          {articles.length} articles · {expanded ? "collapse ↑" : "expand ↓"}
+        </span>
+      </button>
+      {expanded && articles.map((a, i) => (
+        <ArticleRow key={a.id || a.original_url} article={a} index={globalOffset + i} />
+      ))}
     </div>
   );
 }
@@ -314,29 +386,23 @@ export default function App() {
   const [allArticles, setAllArticles] = useState([]);
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const searchTimer = useRef(null);
 
-  // Load articles.json on mount
   useEffect(() => {
     fetch("articles.json")
       .then(r => { if (!r.ok) throw new Error("articles.json not found"); return r.json(); })
-      .then(data => {
-        setAllArticles(data.articles || []);
-        setUpdatedAt(data.updated_at || null);
-      })
-      .catch(e => setError(e.message))
+      .then(data => { setAllArticles(data.articles || []); setUpdatedAt(data.updated_at || null); })
+      .catch(e => setFetchError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  // Reset page when tab/search changes
   useEffect(() => { setPage(1); }, [activeTab, searchQuery]);
 
-  // Client-side filter
   const filtered = useMemo(() => {
     let list = allArticles;
     if (activeTab !== "all") list = list.filter(a => a.domain_category === activeTab);
@@ -355,137 +421,221 @@ export default function App() {
   const paginated = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = paginated.length < filtered.length;
 
-  const handleSearchInput = (val) => {
+  const handleSearch = val => {
     setSearchInput(val);
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => setSearchQuery(val), 300);
   };
 
-  const total = allArticles.length;
-  const byCategory = {};
-  DOMAINS.slice(1).forEach(d => { byCategory[d.id] = allArticles.filter(a => a.domain_category === d.id).length; });
+  // Grouped by domain for "all" view
+  const byDomain = useMemo(() => {
+    const map = {};
+    DOMAINS.slice(1).forEach(d => { map[d.id] = []; });
+    paginated.forEach(a => { if (map[a.domain_category]) map[a.domain_category].push(a); });
+    return map;
+  }, [paginated]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50" style={{ fontFamily: "Century Gothic, Century, CenturyGothic, AppleGothic, sans-serif" }}>
-      {/* Header */}
-      <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center flex-shrink-0">
-              <Activity size={15} className="text-white" />
+    <div style={{ minHeight: "100vh", background: "#FDFDFD" }}>
+
+      {/* ── Navbar ── */}
+      <header style={{ background: "var(--tk-primary)", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ maxWidth: "var(--tk-max)", margin: "0 auto", padding: "0 var(--tk-pad-x)", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+          {/* Wordmark */}
+          <div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em", lineHeight: 1.1 }}>
+              China Watch
             </div>
-            <div>
-              <h1 className="font-bold text-base tracking-tight leading-none">CHINA WATCH</h1>
-              <p className="text-slate-400 text-[10px] tracking-widest uppercase">Research Intelligence Platform</p>
+            <div style={{ fontFamily: "var(--tk-mono)", fontSize: 9.5, letterSpacing: "0.14em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase", marginTop: 2 }}>
+              Takshashila Institution
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {DOMAINS.map(d => {
-              const Icon = d.icon;
-              const active = activeTab === d.id;
-              return (
-                <button key={d.id}
-                  onClick={() => { setActiveTab(d.id); setSearchInput(""); setSearchQuery(""); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    active ? "bg-white text-slate-900" : "text-slate-400 hover:text-white hover:bg-slate-800"
-                  }`}>
-                  <Icon size={12} /> {d.label}
-                </button>
-              );
-            })}
+          {/* Domain tabs */}
+          <nav style={{ display: "flex", alignItems: "center", gap: 0, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>
+            {DOMAINS.map(d => (
+              <button key={d.id} onClick={() => { setActiveTab(d.id); setSearchInput(""); setSearchQuery(""); }}
+                style={{
+                  padding: "0 16px", height: 64, background: "none",
+                  border: "none", borderLeft: "none",
+                  borderRight: "1px solid rgba(255,255,255,0.15)",
+                  cursor: "pointer",
+                  fontFamily: "var(--tk-mono)", fontSize: 10.5, letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: activeTab === d.id ? "var(--tk-gold)" : "rgba(255,255,255,0.7)",
+                  borderBottom: activeTab === d.id ? "2px solid var(--tk-gold)" : "2px solid transparent",
+                  transition: "color 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {d.code}
+              </button>
+            ))}
           </nav>
 
+          {/* Updated at */}
           {updatedAt && (
-            <div className="hidden lg:flex items-center gap-1.5 text-slate-500 text-xs">
-              <RefreshCw size={11} />
-              Updated {new Date(updatedAt).toLocaleDateString()}
-            </div>
+            <span style={{ fontFamily: "var(--tk-mono)", fontSize: 10, letterSpacing: "0.08em", color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap" }}>
+              {new Date(updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }).toUpperCase()}
+            </span>
           )}
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-5">
-        {/* Stat bar */}
-        <div className="flex items-center gap-4 flex-wrap mb-5">
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-100 px-4 py-2">
-            <Database size={13} className="text-slate-400" />
-            <span className="text-sm font-bold text-slate-800">{total.toLocaleString()}</span>
-            <span className="text-xs text-slate-500">articles archived</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-100 px-4 py-2 ml-auto">
-            <Activity size={13} className="text-green-500" />
-            <span className="text-xs text-slate-500">Auto-crawl every 6 hours via GitHub Actions</span>
+      {/* ── Page header band ── */}
+      <div style={{ borderBottom: "2px solid var(--tk-ink)", background: "var(--tk-bg)" }}>
+        <div style={{ maxWidth: "var(--tk-max)", margin: "0 auto", padding: "32px var(--tk-pad-x) 28px" }}>
+          <p className="tk-eyebrow" style={{ marginBottom: 12 }}>Research Intelligence Platform</p>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.2, textWrap: "balance" }}>
+              Chinese government &amp; media — monitored{" "}
+              <em style={{ fontStyle: "italic", color: "var(--tk-primary)" }}>continuously</em>
+            </h1>
+            <div style={{ display: "flex", gap: 32 }}>
+              <div>
+                <div style={{ fontSize: 36, fontWeight: 400, letterSpacing: "-0.02em", color: "var(--tk-ink)", lineHeight: 1 }}>
+                  {allArticles.length.toLocaleString()}
+                </div>
+                <div className="tk-meta" style={{ marginTop: 4 }}>ARTICLES ARCHIVED</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 36, fontWeight: 400, letterSpacing: "-0.02em", color: "var(--tk-ink)", lineHeight: 1 }}>
+                  {DOMAINS.slice(1).length}
+                </div>
+                <div className="tk-meta" style={{ marginTop: 4 }}>DOMAINS TRACKED</div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Error */}
-        {error && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4">
-            <AlertCircle size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">{error} — run the crawler first to generate articles.json</p>
+      {/* ── Search bar ── */}
+      <div style={{ borderBottom: "var(--tk-rule)", background: "var(--tk-bg-deep)" }}>
+        <div style={{ maxWidth: "var(--tk-max)", margin: "0 auto", padding: "0 var(--tk-pad-x)" }}>
+          <div style={{ display: "flex", alignItems: "center", borderLeft: "var(--tk-rule)", borderRight: "var(--tk-rule)" }}>
+            <span style={{ fontFamily: "var(--tk-mono)", fontSize: 11, color: "var(--tk-primary)", padding: "0 14px", letterSpacing: "0.1em" }}>⌕</span>
+            <input
+              type="text"
+              placeholder="Search all archived articles…"
+              value={searchInput}
+              onChange={e => handleSearch(e.target.value)}
+              style={{
+                flex: 1, padding: "14px 0", border: "none", background: "transparent",
+                fontFamily: "var(--tk-sans)", fontSize: 14, color: "var(--tk-ink)",
+                outline: "none",
+              }}
+            />
+            {searchInput && (
+              <button onClick={() => { setSearchInput(""); setSearchQuery(""); }}
+                style={{ padding: "0 16px", background: "none", border: "none", cursor: "pointer",
+                  fontFamily: "var(--tk-mono)", fontSize: 11, color: "var(--tk-ink-50)", letterSpacing: "0.08em" }}>
+                CLEAR ×
+              </button>
+            )}
+            {searchQuery && (
+              <span style={{ fontFamily: "var(--tk-mono)", fontSize: 10, color: "var(--tk-ink-50)", padding: "0 16px", letterSpacing: "0.08em", borderLeft: "var(--tk-rule)", whiteSpace: "nowrap" }}>
+                {filtered.length} RESULTS
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <main style={{ maxWidth: "var(--tk-max)", margin: "0 auto" }}>
+
+        {fetchError && (
+          <div style={{ padding: "20px var(--tk-pad-x)", borderBottom: "var(--tk-rule)", borderLeft: "2px solid #c0392b" }}>
+            <p style={{ fontSize: 13, color: "var(--tk-ink-70)" }}>
+              {fetchError} — the crawler may not have run yet. Check GitHub Actions.
+            </p>
           </div>
         )}
 
-        {/* Search */}
-        <div className="relative mb-5">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search all archived articles..."
-            value={searchInput} onChange={e => handleSearchInput(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
-          />
-          {searchInput && (
-            <button onClick={() => { setSearchInput(""); setSearchQuery(""); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <X size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 size={28} className="animate-spin text-slate-400" />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 0", color: "var(--tk-ink-50)" }}>
+            <Spinner />
+            <span style={{ fontFamily: "var(--tk-mono)", fontSize: 11, letterSpacing: "0.1em", marginLeft: 12, textTransform: "uppercase" }}>Loading</span>
           </div>
+
         ) : filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center max-w-sm">
-              <Database size={32} className="text-slate-300 mx-auto mb-4" />
-              <h3 className="font-semibold text-slate-700 mb-2">
-                {searchQuery ? `No results for "${searchQuery}"` : "No articles yet"}
-              </h3>
-              {!searchQuery && <p className="text-slate-500 text-sm">GitHub Actions crawls every 6 hours.</p>}
-            </div>
+          <div style={{ padding: "80px var(--tk-pad-x)", borderBottom: "var(--tk-rule)" }}>
+            <p className="tk-meta" style={{ marginBottom: 8 }}>NO RESULTS</p>
+            <p style={{ fontSize: 15, color: "var(--tk-ink-70)" }}>
+              {searchQuery
+                ? `No articles match "${searchQuery}".`
+                : "No articles yet. The crawler runs every 6 hours via GitHub Actions."}
+            </p>
           </div>
+
+        ) : activeTab === "all" && !searchQuery ? (
+          // Grouped by domain
+          DOMAINS.slice(1).map(domain => {
+            const arts = byDomain[domain.id] || [];
+            if (!arts.length) return null;
+            const offset = DOMAINS.slice(1)
+              .slice(0, DOMAINS.slice(1).indexOf(domain))
+              .reduce((s, d) => s + (byDomain[d.id]?.length || 0), 0);
+            return (
+              <DomainSection key={domain.id} domain={domain} articles={arts} globalOffset={offset} />
+            );
+          })
+
         ) : (
+          // Flat list
           <>
-            <div className="mb-3">
-              <p className="text-xs text-slate-500">
-                Showing <span className="font-semibold text-slate-700">{paginated.length}</span> of{" "}
-                <span className="font-semibold text-slate-700">{filtered.length}</span> articles
-                {searchQuery && <span> matching "<em>{searchQuery}</em>"</span>}
-              </p>
+            <div style={{ borderBottom: "2px solid var(--tk-ink)" }}>
+              {paginated.map((a, i) => (
+                <ArticleRow key={a.id || a.original_url} article={a} index={i} />
+              ))}
             </div>
-
-            {activeTab === "all" && !searchQuery ? (
-              <DomainGroupedView articles={paginated} />
-            ) : (
-              <div className="grid gap-2">
-                {paginated.map(a => <ArticleCard key={a.id || a.original_url} article={a} />)}
-              </div>
-            )}
-
             {hasMore && (
-              <div className="flex justify-center mt-6">
-                <button onClick={() => setPage(p => p + 1)}
-                  className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-sm font-medium text-slate-700 transition-colors">
-                  Load more ({filtered.length - paginated.length} remaining)
+              <div style={{ padding: "24px var(--tk-pad-x)", borderBottom: "var(--tk-rule)" }}>
+                <button onClick={() => setPage(p => p + 1)} style={{
+                  background: "none", border: "var(--tk-rule)", padding: "10px 24px",
+                  cursor: "pointer", fontFamily: "var(--tk-mono)", fontSize: 11,
+                  letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--tk-ink)",
+                  transition: "background 0.15s ease",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--tk-bg-deep)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  Load more → ({filtered.length - paginated.length} remaining)
                 </button>
               </div>
             )}
           </>
         )}
       </main>
+
+      {/* ── Footer ── */}
+      <footer style={{ background: "var(--tk-primary)", marginTop: 80, padding: "48px var(--tk-pad-x)" }}>
+        <div style={{ maxWidth: "var(--tk-max)", margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 24 }}>
+            <div>
+              <p style={{ color: "#fff", fontSize: 16, fontWeight: 500, marginBottom: 6 }}>China Watch</p>
+              <p style={{ fontFamily: "var(--tk-mono)", fontSize: 10, letterSpacing: "0.12em", color: "rgba(255,255,255,0.45)", textTransform: "uppercase" }}>
+                Takshashila Institution · Geostrategy Programme
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 24 }}>
+              <a href="https://takshashila.org.in" target="_blank" rel="noopener noreferrer"
+                style={{ fontFamily: "var(--tk-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--tk-gold)", textTransform: "uppercase" }}>
+                Takshashila.org.in ↗
+              </a>
+              <a href="https://github.com/shakunasanaxe/CHINA-WATCH" target="_blank" rel="noopener noreferrer"
+                style={{ fontFamily: "var(--tk-mono)", fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.55)", textTransform: "uppercase" }}>
+                GitHub ↗
+              </a>
+            </div>
+          </div>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", marginTop: 32, paddingTop: 20 }}>
+            <p style={{ fontFamily: "var(--tk-mono)", fontSize: 10, color: "rgba(255,255,255,0.35)", letterSpacing: "0.06em" }}>
+              UPDATED AUTOMATICALLY EVERY 6 HOURS VIA GITHUB ACTIONS · SOURCES: XINHUA, GLOBALTIMES, CGTN, MFA, NDRC, MIIT, CAC, MOFCOM, GOVCH, 81CN AND OTHERS
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
