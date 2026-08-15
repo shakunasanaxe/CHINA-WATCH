@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-15T01:41:11.276671+00:00",
-  "total": 273,
+  "updated_at": "2026-08-15T06:50:48.469308+00:00",
+  "total": 281,
   "articles": [
     {
       "original_title": "万里边疆展新颜——新时代边海防建设高质量发展综述",
@@ -56,6 +56,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 667155627
+    },
+    {
+      "original_title": "Machinery aiding Colombia earthquake rescue and recovery efforts",
+      "english_title": "Machinery aiding Colombia earthquake rescue and recovery efforts",
+      "original_url": "https://newsus.cgtn.com/news/2026-08-15/Machinery-aiding-Colombia-earthquake-rescue-and-recovery-efforts-1PChE4Hmi88/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Machinery aiding Colombia earthquake rescue and recovery efforts",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 632242059
     },
     {
       "original_title": "厄瓜多尔总统诺沃亚将访华",
@@ -135,6 +146,17 @@
       "id": 346417256
     },
     {
+      "original_title": "China to host APEC SOM3 and related meetings in Dalian",
+      "english_title": "China to host APEC SOM3 and related meetings in Dalian",
+      "original_url": "https://news.cgtn.com/news/2026-08-14/China-to-host-APEC-SOM3-and-related-meetings-in-Dalian-1PBLcWyewmY/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "China will host the Third APEC Senior Officials' Meeting (SOM3) and related meetings in Dalian, northeast China's Liaoning Province, from August 17 to 28, Foreign Ministry spokesperson Guo Jiakun said on Friday.",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 283125540
+    },
+    {
       "original_title": "【迎峰度夏进行时】南方电网用电负荷今年五创新高 国网电力现货跨省区驰援",
       "english_title": "【迎峰度夏进行时】南方电网用电负荷今年五创新高 国网电力现货跨省区驰援",
       "original_url": "http://www.sasac.gov.cn/n2588025/n2588124/c35772487/content.html",
@@ -144,6 +166,17 @@
       "domain_category": "technology",
       "processed": 0,
       "id": 203768049
+    },
+    {
+      "original_title": "Iran-US tensions remain in focus amid diplomatic activities",
+      "english_title": "Iran-US tensions remain in focus amid diplomatic activities",
+      "original_url": "https://news.cgtn.com/news/2026-08-14/news-1PBpEfdDgDm/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Regional tensions involving Iran remained in focus on Friday as Tehran continued diplomatic contacts over developments in the Middle East, while reports emerged that Iranian forces had downed a US drone over southern Iran.",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 203114649
     },
     {
       "original_title": "Japan's pacifist course under strain as nuclear restraints challenged",
@@ -157,6 +190,28 @@
       "id": 202820639
     },
     {
+      "original_title": "Death toll rises to 2 after M7.7 quake off Indonesia's Flores Island",
+      "english_title": "Death toll rises to 2 after M7.7 quake off Indonesia's Flores Island",
+      "original_url": "https://news.cgtn.com/news/2026-08-15/news-1PCqyFYgP3q/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "The death toll from a magnitude-7.7 earthquake that struck off Indonesia's Flores Island has risen to two, an official at the National Disaster Management Agency said on Saturday, as authorities warned of possible aftershocks.",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 165784530
+    },
+    {
+      "original_title": "Colombian earthquake victims continue to shelter outside",
+      "english_title": "Colombian earthquake victims continue to shelter outside",
+      "original_url": "https://newsus.cgtn.com/news/2026-08-15/Colombian-earthquake-victims-continue-to-shelter-outside-1PChx2bZ1AY/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Colombian earthquake victims continue to shelter outside",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 115267706
+    },
+    {
       "original_title": "近镜头·习近平的文化足迹｜\"把伟大抗战精神一代代传下去\"",
       "english_title": "近镜头·习近平的文化足迹｜\"把伟大抗战精神一代代传下去\"",
       "original_url": "http://www.81.cn/yw_208727/16479283.html",
@@ -166,6 +221,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 55370677
+    },
+    {
+      "original_title": "Archives on wartime sexual slavery victims donated in Nanjing",
+      "english_title": "Archives on wartime sexual slavery victims donated in Nanjing",
+      "original_url": "https://news.cgtn.com/news/2026-08-14/Archives-on-wartime-sexual-slavery-victims-donated-in-Nanjing-1PBEQQEYdfa/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "A collection of historical materials documenting survivors of the Japanese military's wartime sexual slavery system was donated on Friday to the Memorial Hall of the Victims in Nanjing Massacre by Japanese Invaders.",
+      "publish_date": "2026-08-14",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 53213440
     },
     {
       "original_title": "追寻十一位伤残开国将军的人生轨迹，感悟大国战将好样子",
@@ -333,6 +399,17 @@
       "id": 951095741
     },
     {
+      "original_title": "EU, 26 countries issue joint statement",
+      "english_title": "EU, 26 countries issue joint statement",
+      "original_url": "https://news.cgtn.com/news/2026-08-12/news-1PytVIv7iBa/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "EU, 26 countries issue joint statement",
+      "publish_date": "2026-08-12",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 931313415
+    },
+    {
       "original_title": "深学笃行习近平外交思想 奋力开创中国特色大国外交新局面",
       "english_title": "深学笃行习近平外交思想 奋力开创中国特色大国外交新局面",
       "original_url": "http://www.81.cn/yw_208727/16478951.html",
@@ -353,6 +430,17 @@
       "domain_category": "foreign_policy",
       "processed": 0,
       "id": 860321279
+    },
+    {
+      "original_title": "China's car exports top 1 million again as NEVs drive the boom",
+      "english_title": "China's car exports top 1 million again as NEVs drive the boom",
+      "original_url": "https://news.cgtn.com/news/2026-08-12/China-s-car-exports-top-1-million-again-as-NEVs-drive-the-boom-1Py8AtXFc8o/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "NEVs made up more than half of China's car exports for two months in a row, with 553,000 cars shipped overseas, up 145.5% on last year. Total exports hit 1.043 million, up 81.3% year on year, according to the China Association of Automobile Manufacturers (CAAM).",
+      "publish_date": "2026-08-12",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 772471033
     },
     {
       "original_title": "华中地区最大“双膜”工艺应急水厂通水",
