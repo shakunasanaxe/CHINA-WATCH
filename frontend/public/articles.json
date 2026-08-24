@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-24T01:47:21.267401+00:00",
-  "total": 483,
+  "updated_at": "2026-08-24T07:12:57.005366+00:00",
+  "total": 491,
   "articles": [
     {
       "original_title": "加快实现军事训练转型升级丨“金牌飞手”重登“龙虎榜”",
@@ -91,6 +91,17 @@
       "id": 391785455
     },
     {
+      "original_title": "Four misconceptions behind the 'overcapacity' debate",
+      "english_title": "Four misconceptions behind the 'overcapacity' debate",
+      "original_url": "https://news.cgtn.com/news/2026-08-24/Four-misconceptions-behind-the-overcapacity-debate-1PRr6j6aRnG/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "\"Overcapacity\" is increasingly used as a catch-all explanation for China's manufacturing strength. Yet from an economic perspective, large production capacity, strong exports or falling prices do not by themselves prove that capacity is excessive.",
+      "publish_date": "2026-08-24",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 360882998
+    },
+    {
       "original_title": "军报记者寻根行丨永远坚守“气节阵地”",
       "english_title": "军报记者寻根行丨永远坚守“气节阵地”",
       "original_url": "http://www.81.cn/jwtt/16480888.html",
@@ -111,6 +122,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 259783520
+    },
+    {
+      "original_title": "中央网信办深入推进网络娱乐团播乱象整治工作",
+      "english_title": "中央网信办深入推进网络娱乐团播乱象整治工作",
+      "original_url": "https://www.cac.gov.cn/2026-08/24/c_1789324354533963.htm",
+      "raw_text": "“清朗・网络娱乐团播乱象整治”专项行动启动以来，中央网信办紧盯娱乐团播场景内容低俗不良、规则设计刺激打赏、侵害未成年人权益等突出问题，持续加大违法违规娱乐团播打击力度，目前已累计处置团播违规直播间7200余个，严惩违规账号2200余个，同时指导网站平台清退处置一批问题严重的团播MCN机构，发布治理公告17期，并集中曝光典型案例，形成有力震慑。 专项行动期间，中央网信办坚持整治与规范并重，着力细化完善团播审核机制，优化榜单排名和功能玩法，强化团播账号和团播机构管理，指导督促网站平台积极履行主体责任，有针对性地加强娱乐团播规范管理。抖音推进团播账号主页MCN机构信息外显工作，组织开展团播机构培训，从源头规范娱乐团播行为。快手细化团播审核标准，加强技术能力建设，提升对团播低俗玩法和不良互动的识别准确率。微信视频号上线疑似未成年人团播身份核验功能，有效防范未成年人以隐蔽形式出镜参与团播。哔哩哔哩优化调整团播功能玩法，下线倍数积分、梯度加成、“冲榜”等刺激打赏的玩法机制。小红书采取限流等处置措施，严管密集喊话、无实质内容PK等团播不当行为。 经过治理，娱乐团播低俗内容大幅下降，诱导刺激打赏等违规行为得到有效遏制，团播生态明显转好。下一步，中央网信办将继续保持高压严管态势，加大娱乐团播违规账号和机构查处力度，指导督促网站平台健全娱乐团播管理机制，提升技术治理能力，持续优化功能玩法，推动形成健康有序、风清气正的娱乐团播生态。",
+      "publish_date": "2026-08-24",
+      "source_site": "CAC",
+      "domain_category": "technology",
+      "processed": 0,
+      "id": 80064305
     },
     {
       "original_title": "中国共产党第二十届中央纪律检查委员会第六次全体会议公报",
@@ -179,6 +201,17 @@
       "id": 619936665
     },
     {
+      "original_title": "Death toll from Indian hooch tragedy rises to 13",
+      "english_title": "Death toll from Indian hooch tragedy rises to 13",
+      "original_url": "https://news.cgtn.com/news/2026-08-23/Death-toll-from-Indian-hooch-tragedy-rises-to-13-1PQIreQs06I/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "The death toll from a spurious liquor tragedy in the western state of Gujarat has risen to 13, Indian authorities said on Sunday.",
+      "publish_date": "2026-08-23",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 608290139
+    },
+    {
       "original_title": "八一锐评丨官兵“心上事” 干部“上心事”",
       "english_title": "八一锐评丨官兵“心上事” 干部“上心事”",
       "original_url": "http://www.81.cn/yw_208727/16480800.html",
@@ -188,6 +221,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 250806165
+    },
+    {
+      "original_title": "How Israel's E1 plan in West Bank threatens a future Palestinian state",
+      "english_title": "How Israel's E1 plan in West Bank threatens a future Palestinian state",
+      "original_url": "https://news.cgtn.com/news/2026-08-23/How-Israel-s-E1-plan-in-West-Bank-threatens-a-future-Palestinian-state-1PQw141LORa/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Israel's plan to build new settlements in the E1 area of the occupied West Bank has drawn widespread international condemnation, with the international community warning that the project could further undermine the territorial continuity needed for a future Palestinian state.",
+      "publish_date": "2026-08-23",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 240974420
     },
     {
       "original_title": "South Africa freedom day memorial gathering reveals its pursuit of dignity and inclusive governance in post apartheid era",
@@ -232,6 +276,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 939368980
+    },
+    {
+      "original_title": "UK forecasts 'biggest' El Nino will smash records, spark hottest year",
+      "english_title": "UK forecasts 'biggest' El Nino will smash records, spark hottest year",
+      "original_url": "https://news.cgtn.com/news/2026-08-22/UK-forecasts-biggest-El-Nino-will-smash-records-spark-hottest-year-1POfuH0YOA0/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "UK forecasts 'biggest' El Nino will smash records, spark hottest year",
+      "publish_date": "2026-08-22",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 848186729
     },
     {
       "original_title": "理政纪丨一条板凳连民心",
@@ -432,6 +487,17 @@
       "id": 767735761
     },
     {
+      "original_title": "Several wounded in sword attack at Swedish school",
+      "english_title": "Several wounded in sword attack at Swedish school",
+      "original_url": "https://news.cgtn.com/news/2026-08-21/news-1PNlTaQApag/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Several wounded in sword attack at Swedish school",
+      "publish_date": "2026-08-21",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 680173043
+    },
+    {
       "original_title": "“两优一先”风采录丨69036部队72分队党支部：云端铸忠诚 转型砺尖刀",
       "english_title": "“两优一先”风采录丨69036部队72分队党支部：云端铸忠诚 转型砺尖刀",
       "original_url": "http://www.81.cn/yw_208727/16480464.html",
@@ -509,6 +575,17 @@
       "id": 413138878
     },
     {
+      "original_title": "Chinese doubles hopes end in Cincinnati Open quarterfinals",
+      "english_title": "Chinese doubles hopes end in Cincinnati Open quarterfinals",
+      "original_url": "https://news.cgtn.com/news/2026-08-21/Chinese-doubles-hopes-end-in-Cincinnati-Open-quarterfinals-1PMEIreFG5G/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "Chinese doubles hopes end in Cincinnati Open quarterfinals",
+      "publish_date": "2026-08-21",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 380777069
+    },
+    {
       "original_title": "中国印尼全面战略对话机制举行首次会议",
       "english_title": "中国印尼全面战略对话机制举行首次会议",
       "original_url": "http://www.81.cn/yw_208727/16480627.html",
@@ -540,6 +617,17 @@
       "domain_category": "foreign_policy",
       "processed": 0,
       "id": 282348994
+    },
+    {
+      "original_title": "DR Congo steps up Ebola surveillance along Congo River",
+      "english_title": "DR Congo steps up Ebola surveillance along Congo River",
+      "original_url": "https://newsaf.cgtn.com/news/2026-08-21/DR-Congo-steps-up-Ebola-surveillance-along-Congo-River-1PN0Ilxm9eU/p.html?UTM_Source=cgtn&UTM_Medium=rss&UTM_Campaign=World",
+      "raw_text": "The \"Congo River Without Ebola\" initiative, launched Thursday, is designed to strengthen surveillance and preparedness along the river and prevent the outbreak from reaching major cities such as Mbandaka and Kinshasa. Authorities also aim to limit the risk of the virus crossing into neighboring Republic of the Congo and Central African Republic",
+      "publish_date": "2026-08-21",
+      "source_site": "CGTN",
+      "domain_category": "foreign_policy",
+      "processed": 0,
+      "id": 256848309
     },
     {
       "original_title": "中国印尼外长防长“2+2”对话机制举行第二次部长级会议",
