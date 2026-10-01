@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-01T05:28:59.531123+00:00",
-  "total": 1598,
+  "updated_at": "2026-10-01T12:57:48.154250+00:00",
+  "total": 1599,
   "articles": [
     {
       "original_title": "特朗普催账，韩国先掏2000亿美元",
@@ -12,6 +12,17 @@
       "domain_category": "military",
       "processed": 0,
       "id": 987435930
+    },
+    {
+      "original_title": "白宫敦促欧盟动用应急柴油储备，“对德法尤其不满”",
+      "english_title": "白宫敦促欧盟动用应急柴油储备，“对德法尤其不满”",
+      "original_url": "https://www.guancha.cn/GuoJi·ZhanLue/2026_10_01_902928.shtml",
+      "raw_text": "白宫敦促欧盟动用应急柴油储备，“对德法尤其不满”",
+      "publish_date": "2026-10-01",
+      "source_site": "GUANCHA",
+      "domain_category": "military",
+      "processed": 0,
+      "id": 547878564
     },
     {
       "original_title": "习近平主席华盛顿之行：三个场景的历史分量",
